@@ -304,7 +304,7 @@ Set `SECURE_COOKIES=true` behind HTTPS, keep the KEK in a secret manager, run mi
 
 ## 📜 License
 
-Private project — all rights reserved. © Jean Pereira.
+Source available — all rights reserved. © Jean Pereira.
 
 ---
 

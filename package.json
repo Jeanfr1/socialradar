@@ -1,0 +1,56 @@
+{
+  "name": "brandpulse",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-brand social media operations and analytics (read-only monitoring on top of Buffer).",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "worker": "tsx src/worker/main.ts",
+    "db:local": "tsx scripts/db-local.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "setup:owner": "tsx scripts/create-owner.ts",
+    "connections:import": "tsx scripts/import-buffer-keys.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "sync:now": "tsx scripts/sync-now.ts",
+    "reports:run": "tsx scripts/run-reports.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.125.0",
+    "bcryptjs": "3.0.3",
+    "drizzle-orm": "0.45.2",
+    "luxon": "3.7.2",
+    "next": "16.3.5",
+    "pdfkit": "0.20.2",
+    "pg": "8.23.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "recharts": "3.10.1",
+    "zod": "4.6.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/luxon": "3.7.5",
+    "@types/node": "22.20.2",
+    "@types/pdfkit": "0.17.6",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "drizzle-kit": "0.31.10",
+    "embedded-postgres": "18.4.0-beta.17",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vite": "8.3.0",
+    "vitest": "5.0.0"
+  }
+}

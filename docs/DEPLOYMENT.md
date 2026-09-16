@@ -1,5 +1,8 @@
 # Deployment Plan — Vercel + Supabase
 
+> **Live deployment:** https://socialradar-xi.vercel.app (Vercel project `socialradar`, Supabase project `yuluwgtlsshhwhsricyy`, region eu-west-1).
+> The Supabase pooler certificate chain is not accepted by `pg`'s `verify-full` default, so `DATABASE_URL` ends with `?sslmode=require&uselibpqcompat=true` (encrypted connection, libpq semantics).
+
 BrandPulse is a modular monolith: a Next.js app plus background work (sync, alerts, insights, weekly reports) sharing one PostgreSQL database.
 
 On Vercel there is no long-running process, so the background work runs through **`/api/cron/tick`**, an authenticated endpoint that does exactly what the worker loop does: recovers stuck jobs, schedules everything due, then claims and runs queued jobs within a time budget. The `npm run worker` process stays available for any always-on host; running both is safe (`FOR UPDATE SKIP LOCKED` + dedupe keys).
@@ -69,7 +72,7 @@ DATABASE_URL='…supabase…' BRANDPULSE_OWNER_PASSWORD='a-long-passphrase' \
 
 ## 3. Cron cadence
 
-`vercel.json` schedules `/api/cron/tick` hourly (`17 * * * *`). **Vercel Hobby runs cron jobs once per day**; Pro runs them on the declared schedule. Consequences on Hobby: data refreshes daily and the weekly report appears on the first run after Monday 08:00 (brand timezone) rather than at 08:00 sharp. Options: upgrade to Pro, or trigger the endpoint from any external scheduler:
+`vercel.json` schedules `/api/cron/tick` daily at `30 11 * * *` (UTC), which is after 08:00 local in both America/Sao_Paulo and Europe/Paris, so Monday reports are generated the same day. **Vercel Hobby runs cron jobs once per day**; Pro runs them on the declared schedule. Consequences on Hobby: data refreshes daily and the weekly report appears on the first run after Monday 08:00 (brand timezone) rather than at 08:00 sharp. Options: upgrade to Pro, or trigger the endpoint from any external scheduler:
 
 ```bash
 curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/tick

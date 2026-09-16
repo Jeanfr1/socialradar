@@ -14,7 +14,14 @@ export function getDb(): Db {
   if (g.__brandpulseDb) return g.__brandpulseDb;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not configured");
-  const pool = new Pool({ connectionString: url, max: Number(process.env.DB_POOL_MAX ?? 10) });
+  const pool = new Pool({
+    connectionString: url,
+    max: Number(process.env.DB_POOL_MAX ?? 10),
+    // Serverless: connections start cold behind a pooler, so fail fast and recycle idle sockets.
+    connectionTimeoutMillis: Number(process.env.DB_CONNECT_TIMEOUT_MS ?? 15_000),
+    idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS ?? 10_000),
+    keepAlive: true,
+  });
   g.__brandpulsePool = pool;
   g.__brandpulseDb = drizzle(pool, { schema }) as unknown as Db;
   return g.__brandpulseDb;

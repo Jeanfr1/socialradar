@@ -15,11 +15,11 @@ export async function regenerateReportAction(_prev: ActionResult, formData: Form
     const user = await requireUser("action");
     const brandId = uuidField(formData, "brandId");
     const periodStart = str(formData, "periodStart");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(periodStart)) return fail("Choose a week.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(periodStart)) return fail("Escolha uma semana.");
     const row = await regenerateReport(getDb(), user, brandId, periodStart, new Date());
     revalidatePath(`/brands/${brandId}/reports`, "layout");
     revalidatePath(`/brands/${brandId}`);
-    if (row.status === "failed") return fail("The report couldn't be generated in full. The incomplete version is listed in the history.");
+    if (row.status === "failed") return fail("Não foi possível gerar o relatório por completo. A versão incompleta está listada no histórico.");
     target = `/brands/${brandId}/reports/${row.id}`;
   } catch (err) {
     return toActionError(err, "regenerateReport");

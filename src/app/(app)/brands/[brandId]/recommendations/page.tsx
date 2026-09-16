@@ -15,9 +15,13 @@ import type { Platform } from "@/domain/types";
 import { oneOf, orNotFound, param, type SearchParams } from "@/server/queries/pages/guard";
 import { loadRecommendations, REC_PRIORITY_FILTERS, REC_STATUS_FILTERS, type RecommendationCardVM } from "@/server/queries/pages/recommendations";
 
-export const metadata: Metadata = { title: "Recommendations & experiments" };
+export const metadata: Metadata = { title: "Recomendações e experimentos" };
 
-const STATUS_FILTER_LABEL: Record<string, string> = { active: "Active (new, accepted, trying)", proposed: "New", accepted: "Accepted", in_experiment: "Trying", dismissed: "Dismissed", done: "Done", all: "All" };
+const STATUS_FILTER_LABEL: Record<string, string> = { active: "Ativas (novas, aceitas, em teste)", proposed: "Novas", accepted: "Aceitas", in_experiment: "Em teste", dismissed: "Descartadas", done: "Concluídas", all: "Todas" };
+const PRIORITY_LABEL: Record<string, string> = { high: "Alta", medium: "Média", low: "Baixa" };
+const PRIORITY_FILTER_LABEL: Record<string, string> = { all: "Todas", high: "Alta", medium: "Média", low: "Baixa" };
+const CONFIDENCE_LABEL: Record<string, string> = { high: "Alta", medium: "Média", low: "Baixa" };
+const EXPERIMENT_STATUS_LABEL: Record<string, string> = { planned: "Planejado", running: "Em andamento", completed: "Concluído", abandoned: "Abandonado" };
 
 function FactList({ title, facts }: { title: string; facts: { label: string; value: string }[] }) {
   if (facts.length === 0) return null;
@@ -41,35 +45,35 @@ function RecCard({ c, brandId, canManage }: { c: RecommendationCardVM; brandId: 
   return (
     <article aria-labelledby={`rec-${c.id}`} className="rounded-lg border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone={c.priority === "high" ? "critical" : c.priority === "medium" ? "warning" : "neutral"}>Priority: {c.priority[0]!.toUpperCase() + c.priority.slice(1)}</Pill>
+        <Pill tone={c.priority === "high" ? "critical" : c.priority === "medium" ? "warning" : "neutral"}>Prioridade: {PRIORITY_LABEL[c.priority] ?? c.priority}</Pill>
         <span className="inline-flex items-center">
-          <Pill tone="accent">Confidence: {c.confidence[0]!.toUpperCase() + c.confidence.slice(1)}</Pill>
-          <InfoTip label="About Confidence">{DEFINITIONS.confidence}</InfoTip>
+          <Pill tone="accent">Confiança: {CONFIDENCE_LABEL[c.confidence] ?? c.confidence}</Pill>
+          <InfoTip label="Sobre Confiança">{DEFINITIONS.confidence}</InfoTip>
         </span>
         <Pill>{c.statusLabel}</Pill>
         <span className="text-xs text-ink-2">
           {c.kindLabel}
-          {c.account ? ` · ${c.account}` : ""} · updated {c.updated}
+          {c.account ? ` · ${c.account}` : ""} · atualizado {c.updated}
         </span>
         {c.isDemo ? <DemoBadge /> : null}
       </div>
       <h2 id={`rec-${c.id}`} className="sr-only">
-        {c.kindLabel} recommendation
+        Recomendação de {c.kindLabel}
       </h2>
 
       <div lang={c.locale} className="mt-3 grid gap-3 lg:grid-cols-2">
-        <section aria-label="Observed finding" className="rounded-md border border-line p-3">
+        <section aria-label="Achado observado" className="rounded-md border border-line p-3">
           <p className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-ink-2">
-            <Icon name="eye" className="h-3.5 w-3.5" /> Observed
+            <Icon name="eye" className="h-3.5 w-3.5" /> Observado
           </p>
           <p className="font-medium">{c.finding}</p>
           <div className="mt-2 space-y-2">
-            <FactList title="Comparison period" facts={c.periodFacts} />
-            <FactList title="Sample size" facts={c.sampleFacts} />
-            <FactList title="Supporting metrics" facts={c.otherFacts} />
+            <FactList title="Período de comparação" facts={c.periodFacts} />
+            <FactList title="Tamanho da amostra" facts={c.sampleFacts} />
+            <FactList title="Métricas de apoio" facts={c.otherFacts} />
             {c.posts.length ? (
               <div>
-                <p className="text-xs font-semibold text-ink-2">Linked posts ({c.posts.length})</p>
+                <p className="text-xs font-semibold text-ink-2">Posts relacionados ({c.posts.length})</p>
                 <ul className="mt-0.5 space-y-0.5 text-xs">
                   {c.posts.slice(0, 12).map((p, i) => (
                     <li key={`${p.postId}-${i}`}>
@@ -79,7 +83,7 @@ function RecCard({ c, brandId, canManage }: { c: RecommendationCardVM; brandId: 
                           {p.published ? ` · ${p.published}` : ""}
                           {p.value ? ` · ${p.value}` : ""}
                           <Icon name="external" className="h-3 w-3" />
-                          <span className="sr-only">(opens in a new tab)</span>
+                          <span className="sr-only">(abre em uma nova aba)</span>
                         </a>
                       ) : (
                         <span>
@@ -95,15 +99,15 @@ function RecCard({ c, brandId, canManage }: { c: RecommendationCardVM; brandId: 
             ) : null}
           </div>
         </section>
-        <section aria-label="Hypothesis" className="rounded-md border border-dashed border-line-strong bg-canvas p-3">
+        <section aria-label="Hipótese" className="rounded-md border border-dashed border-line-strong bg-canvas p-3">
           <p className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-ink-2">
-            <Icon name="lightbulb" className="h-3.5 w-3.5" /> Hypothesis — our interpretation, not a measured fact
+            <Icon name="lightbulb" className="h-3.5 w-3.5" /> Hipótese — nossa interpretação, não um fato medido
           </p>
           <p className="italic">{c.interpretation}</p>
-          <p className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-ink-2">Suggested action</p>
+          <p className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-ink-2">Ação sugerida</p>
           <p>{c.action}</p>
           <p className="mt-2 text-xs text-ink-2">
-            Success metric: {c.successMetric} · Evaluation window: {c.evaluationWindowDays} days
+            Métrica de sucesso: {c.successMetric} · Janela de avaliação: {c.evaluationWindowDays} dias
           </p>
         </section>
       </div>
@@ -111,37 +115,37 @@ function RecCard({ c, brandId, canManage }: { c: RecommendationCardVM; brandId: 
       {c.experiment ? (
         <p className="mt-3 text-sm">
           <Icon name="flask" className="mr-1 inline h-4 w-4 text-accent" />
-          {c.experiment.status === "running" ? "Trying since" : "Experiment"} {c.experiment.startDate ?? "—"} → {c.experiment.endDate ?? "—"} ({c.experiment.status})
+          {c.experiment.status === "running" ? "Em teste desde" : "Experimento"} {c.experiment.startDate ?? "—"} → {c.experiment.endDate ?? "—"} ({EXPERIMENT_STATUS_LABEL[c.experiment.status] ?? c.experiment.status})
         </p>
       ) : null}
 
       {canManage && c.status !== "superseded" ? (
         <div className="mt-3 flex flex-wrap items-start gap-2 border-t border-line pt-3">
-          {c.status === "proposed" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "accepted" }} submitLabel="Accept" variant="secondary" inline /> : null}
-          {c.status === "proposed" || c.status === "accepted" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "dismissed" }} submitLabel="Dismiss" variant="secondary" inline /> : null}
-          {c.status === "accepted" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "done" }} submitLabel="Mark done" variant="secondary" inline /> : null}
-          {c.status === "dismissed" || c.status === "done" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "proposed" }} submitLabel="Restore" variant="secondary" inline /> : null}
+          {c.status === "proposed" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "accepted" }} submitLabel="Aceitar" variant="secondary" inline /> : null}
+          {c.status === "proposed" || c.status === "accepted" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "dismissed" }} submitLabel="Descartar" variant="secondary" inline /> : null}
+          {c.status === "accepted" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "done" }} submitLabel="Marcar como concluída" variant="secondary" inline /> : null}
+          {c.status === "dismissed" || c.status === "done" ? <ActionForm action={recommendationStatusAction} hidden={{ ...hidden, status: "proposed" }} submitLabel="Restaurar" variant="secondary" inline /> : null}
           {c.canStartExperiment ? (
             <details className="w-full">
-              <summary className="link cursor-pointer text-sm">Mark as trying (create experiment)</summary>
-              <ActionForm action={createExperimentAction} hidden={hidden} submitLabel="Start experiment" className="mt-2 max-w-xl">
+              <summary className="link cursor-pointer text-sm">Marcar como em teste (criar experimento)</summary>
+              <ActionForm action={createExperimentAction} hidden={hidden} submitLabel="Iniciar experimento" className="mt-2 max-w-xl">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div>
                     <label htmlFor={`es-${c.id}`} className="label text-xs">
-                      Start date
+                      Data de início
                     </label>
                     <input id={`es-${c.id}`} name="startDate" type="date" required defaultValue={c.defaultStart} className="input" />
                   </div>
                   <div>
                     <label htmlFor={`ee-${c.id}`} className="label text-xs">
-                      End date
+                      Data de término
                     </label>
                     <input id={`ee-${c.id}`} name="endDate" type="date" required defaultValue={c.defaultEnd} className="input" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor={`eh-${c.id}`} className="label text-xs">
-                    Hypothesis (optional; defaults to the interpretation above)
+                    Hipótese (opcional; por padrão, usa a interpretação acima)
                   </label>
                   <textarea id={`eh-${c.id}`} name="hypothesis" rows={2} maxLength={2000} className="input" />
                 </div>
@@ -169,16 +173,16 @@ export default async function RecommendationsPage({ params, searchParams }: { pa
   return (
     <>
       <PageHeader
-        title="Recommendations & experiments"
-        subtitle={`Findings from this brand's own data, with the evidence behind each one. Recommendation text uses the brand's report language (${vm.brand.reportLocale}).`}
+        title="Recomendações e experimentos"
+        subtitle={`Achados a partir dos dados da própria marca, com a evidência por trás de cada um. O texto das recomendações usa o idioma de relatório da marca (${vm.brand.reportLocale}).`}
       />
       <Banner tone="info">
-        {vm.lastGenerated ? `Recommendations were last generated on ${vm.lastGenerated}` : "Recommendations haven't been generated yet"}
-        {vm.dataAsOf ? ` using data as of ${vm.dataAsOf}.` : "."} They refresh periodically, not in real time.
+        {vm.lastGenerated ? `As recomendações foram geradas pela última vez em ${vm.lastGenerated}` : "As recomendações ainda não foram geradas"}
+        {vm.dataAsOf ? `, com dados de ${vm.dataAsOf}.` : "."} Elas são atualizadas periodicamente, não em tempo real.
       </Banner>
-      {!vm.canManage ? <p className="mb-3 text-sm text-ink-2">You have view-only access. Managers and owners can accept, dismiss or track recommendations.</p> : null}
+      {!vm.canManage ? <p className="mb-3 text-sm text-ink-2">Você tem acesso somente leitura. Gerentes e proprietários podem aceitar, descartar ou acompanhar recomendações.</p> : null}
 
-      <form method="get" action={base} className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-line bg-surface p-3" aria-label="Recommendation filters">
+      <form method="get" action={base} className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-line bg-surface p-3" aria-label="Filtros de recomendações">
         <div>
           <label htmlFor="r-status" className="label text-xs">
             Status
@@ -193,22 +197,22 @@ export default async function RecommendationsPage({ params, searchParams }: { pa
         </div>
         <div>
           <label htmlFor="r-priority" className="label text-xs">
-            Priority
+            Prioridade
           </label>
           <select id="r-priority" name="priority" defaultValue={vm.filters.priority} className="input">
             {REC_PRIORITY_FILTERS.map((p) => (
               <option key={p} value={p}>
-                {p === "all" ? "All" : p[0]!.toUpperCase() + p.slice(1)}
+                {PRIORITY_FILTER_LABEL[p] ?? p}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="r-platform" className="label text-xs">
-            Platform
+            Plataforma
           </label>
           <select id="r-platform" name="platform" defaultValue={vm.filters.platform} className="input">
-            <option value="all">All</option>
+            <option value="all">Todas</option>
             {vm.platforms.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
@@ -217,18 +221,18 @@ export default async function RecommendationsPage({ params, searchParams }: { pa
           </select>
         </div>
         <button type="submit" className="btn btn-primary">
-          Apply
+          Aplicar
         </button>
         <Link href={base} className="btn btn-secondary">
-          Reset
+          Limpar
         </Link>
       </form>
 
       {vm.cards.length === 0 ? (
         vm.filters.status === "active" && vm.filters.priority === "all" && vm.filters.platform === "all" ? (
-          <EmptyState title="Not enough data yet to generate recommendations for this brand.">We typically need {vm.emptyThreshold}.</EmptyState>
+          <EmptyState title="Ainda não há dados suficientes para gerar recomendações para esta marca.">Normalmente precisamos de {vm.emptyThreshold}.</EmptyState>
         ) : (
-          <EmptyState title="No recommendations match these filters." />
+          <EmptyState title="Nenhuma recomendação corresponde a estes filtros." />
         )
       ) : (
         <ul className="space-y-3">
@@ -241,55 +245,55 @@ export default async function RecommendationsPage({ params, searchParams }: { pa
       )}
 
       <Card labelledBy="experiments" className="mt-6">
-        <CardTitle id="experiments">Experiments</CardTitle>
+        <CardTitle id="experiments">Experimentos</CardTitle>
         {vm.experiments.length === 0 ? (
-          <p className="text-sm text-ink-2">No experiments yet. Use &ldquo;Mark as trying&rdquo; on a recommendation to track it.</p>
+          <p className="text-sm text-ink-2">Nenhum experimento ainda. Use &ldquo;Marcar como em teste&rdquo; em uma recomendação para acompanhá-la.</p>
         ) : (
           <ul className="space-y-3">
             {vm.experiments.map((e) => (
               <li key={e.id} className="rounded-md border border-line p-3 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Pill tone={e.status === "running" ? "accent" : e.status === "completed" ? "healthy" : "neutral"}>{e.status[0]!.toUpperCase() + e.status.slice(1)}</Pill>
+                  <Pill tone={e.status === "running" ? "accent" : e.status === "completed" ? "healthy" : "neutral"}>{EXPERIMENT_STATUS_LABEL[e.status] ?? e.status}</Pill>
                   <span className="text-xs text-ink-2">
-                    {e.startDate ?? "—"} → {e.endDate ?? "—"} · created {e.created}
+                    {e.startDate ?? "—"} → {e.endDate ?? "—"} · criado {e.created}
                   </span>
                 </div>
                 <p className="mt-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Hypothesis: </span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Hipótese: </span>
                   <span className="italic">{e.hypothesis}</span>
                 </p>
                 <p className="mt-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Action: </span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Ação: </span>
                   {e.action}
                 </p>
-                <p className="mt-1 text-xs text-ink-2">Success metric: {e.successMetric}</p>
-                {e.resultSummary ? <p className="mt-1">Result: {e.resultSummary}</p> : null}
+                <p className="mt-1 text-xs text-ink-2">Métrica de sucesso: {e.successMetric}</p>
+                {e.resultSummary ? <p className="mt-1">Resultado: {e.resultSummary}</p> : null}
                 {vm.canManage && !e.finished ? (
                   <details className="mt-2">
-                    <summary className="link cursor-pointer text-sm">Update experiment</summary>
-                    <ActionForm action={updateExperimentAction} hidden={{ brandId: vm.brand.id, experimentId: e.id }} submitLabel="Save" className="mt-2 max-w-xl">
+                    <summary className="link cursor-pointer text-sm">Atualizar experimento</summary>
+                    <ActionForm action={updateExperimentAction} hidden={{ brandId: vm.brand.id, experimentId: e.id }} submitLabel="Salvar" className="mt-2 max-w-xl">
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div>
                           <label htmlFor={`xs-${e.id}`} className="label text-xs">
                             Status
                           </label>
                           <select id={`xs-${e.id}`} name="status" defaultValue={e.status} className="input">
-                            <option value="planned">Planned</option>
-                            <option value="running">Running</option>
-                            <option value="completed">Completed</option>
-                            <option value="abandoned">Abandoned</option>
+                            <option value="planned">Planejado</option>
+                            <option value="running">Em andamento</option>
+                            <option value="completed">Concluído</option>
+                            <option value="abandoned">Abandonado</option>
                           </select>
                         </div>
                         <div>
                           <label htmlFor={`xe-${e.id}`} className="label text-xs">
-                            End date
+                            Data de término
                           </label>
                           <input id={`xe-${e.id}`} name="endDate" type="date" defaultValue={e.endDate ?? ""} className="input" />
                         </div>
                       </div>
                       <div>
                         <label htmlFor={`xr-${e.id}`} className="label text-xs">
-                          Result summary
+                          Resumo do resultado
                         </label>
                         <textarea id={`xr-${e.id}`} name="resultSummary" rows={2} maxLength={4000} defaultValue={e.resultSummary ?? ""} className="input" />
                       </div>

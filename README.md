@@ -140,6 +140,12 @@ The application is a **modular monolith**: one Next.js web process and one durab
 
 ---
 
+## 🌐 Idioma
+
+A **interface é em português do Brasil (pt-BR)**, assim como os relatórios semanais e as recomendações. Código, comentários, logs e documentação técnica permanecem em inglês.
+
+---
+
 ## 🎯 Product principles
 
 | Principle | What it means in practice |

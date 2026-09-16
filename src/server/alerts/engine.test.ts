@@ -81,7 +81,7 @@ describe("alerts engine", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]!.severity).toBe("critical");
     expect(rows[0]!.brandId).toBe(brandId);
-    expect(rows[0]!.suggestedAction).toMatch(/Schedule \d+ posts? before/);
+    expect(rows[0]!.suggestedAction).toMatch(/Agende \d+ posts? até/);
   });
 
   it("does not let a single distant post hide an imminent gap", async () => {

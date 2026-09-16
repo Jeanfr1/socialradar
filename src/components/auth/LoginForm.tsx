@@ -9,13 +9,13 @@ export function LoginForm({ action }: { action: FormAction }) {
     <form action={formAction} className="space-y-4" noValidate>
       <div>
         <label htmlFor="email" className="label">
-          Email
+          E-mail
         </label>
         <input id="email" name="email" type="email" autoComplete="username" required className="input" />
       </div>
       <div>
         <label htmlFor="password" className="label">
-          Password
+          Senha
         </label>
         <input id="password" name="password" type="password" autoComplete="current-password" required className="input" />
       </div>
@@ -23,15 +23,15 @@ export function LoginForm({ action }: { action: FormAction }) {
         {state.status === "error" ? (
           <div className="rounded-md border border-critical/40 bg-[#fdf1f0] px-3 py-2 text-sm">
             <p className="text-critical">{state.message}</p>
-            <p className="mt-1 text-ink-2">Still stuck? Contact your admin.</p>
+            <p className="mt-1 text-ink-2">Ainda com problema? Fale com o seu administrador.</p>
           </div>
         ) : null}
       </div>
       <button type="submit" disabled={pending} className="btn btn-primary w-full">
-        {pending ? "Signing in…" : "Sign in"}
+        {pending ? "Entrando…" : "Entrar"}
       </button>
       <p className="text-center text-xs text-ink-2">
-        Forgot password? BrandPulse is invite-only — ask a workspace administrator to reset it.
+        Esqueceu a senha? O BrandPulse é apenas por convite — peça a um administrador do workspace para redefini-la.
       </p>
     </form>
   );

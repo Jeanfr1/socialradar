@@ -58,13 +58,13 @@ export interface AlertCandidate {
 export type DateFormatter = (at: Date, timezone: string) => string;
 
 export const defaultDateFormatter: DateFormatter = (at, timezone) =>
-  `${DateTime.fromJSDate(at, { zone: timezone }).setLocale("en-US").toFormat("ccc d LLL HH:mm")} (${timezone})`;
+  `${DateTime.fromJSDate(at, { zone: timezone }).setLocale("pt-BR").toFormat("ccc d LLL HH:mm")} (${timezone})`;
 
 const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;
 const MAX_PROVIDER_MESSAGE = 500;
 
-const PLATFORM_LABEL: Record<Platform, string> = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube", other: "Other" };
+const PLATFORM_LABEL: Record<Platform, string> = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube", other: "Outra" };
 
 function plural(n: number, singular: string, pluralForm = `${singular}s`): string {
   return `${n} ${n === 1 ? singular : pluralForm}`;
@@ -102,18 +102,18 @@ function coverageAction(input: AccountAlertInput, fmt: DateFormatter, tz: string
   const c = input.coverage;
   const horizonDays = Math.round((c.horizonEnd.getTime() - c.horizonStart.getTime()) / DAY_MS);
   if (c.postsNeeded === 0) {
-    return `Every expected slot in the next ${plural(horizonDays, "day")} is covered, but the coverage horizon is shorter than the warning threshold. Extend the horizon in this account's cadence settings so healthy coverage can be confirmed.`;
+    return `Todos os horários previstos nos próximos ${plural(horizonDays, "dia")} estão cobertos, mas o horizonte de cobertura é menor que o limite de atenção. Aumente o horizonte nas configurações de cadência desta conta para que a cobertura saudável possa ser confirmada.`;
   }
   const deadline = c.fillDeadline ? fmt(c.fillDeadline, tz) : null;
   const cap = input.inventoryCap ?? (c as Partial<{ inventoryCap: number | null }>).inventoryCap ?? null;
   const remaining = cap === null ? null : Math.max(0, cap - c.scheduledCount);
   if (remaining !== null && remaining < c.postsNeeded) {
     if (remaining === 0) {
-      return `The provider's scheduled-post limit (${cap}) is reached, so the next ${horizonDays} days cannot be fully covered. Top up the queue as posts publish${deadline ? `, before ${deadline} at the latest` : ""}.`;
+      return `O limite de posts agendados do provedor (${cap}) foi atingido, então os próximos ${horizonDays} dias não podem ser totalmente cobertos. Reabasteça a fila conforme os posts forem publicados${deadline ? `, no máximo até ${deadline}` : ""}.`;
     }
-    return `Schedule ${plural(remaining, "post")}${deadline ? ` before ${deadline}` : ""} (the provider limit of ${cap} scheduled posts prevents covering all ${horizonDays} days), then top up the queue as posts publish.`;
+    return `Agende ${plural(remaining, "post")}${deadline ? ` até ${deadline}` : ""} (o limite de ${cap} posts agendados do provedor impede cobrir todos os ${horizonDays} dias) e reabasteça a fila conforme os posts forem publicados.`;
   }
-  return `Schedule ${plural(c.postsNeeded, "post")}${deadline ? ` before ${deadline}` : ""} to cover the next ${plural(horizonDays, "day")}.`;
+  return `Agende ${plural(c.postsNeeded, "post")}${deadline ? ` até ${deadline}` : ""} para cobrir os próximos ${plural(horizonDays, "dia")}.`;
 }
 
 export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[] {
@@ -130,9 +130,9 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
       dedupeKey: `account_disconnected:${input.accountId}`,
       type: "account_disconnected",
       severity: "critical",
-      title: `${who} is disconnected from Buffer`,
+      title: `${who} está desconectado do Buffer`,
       evidence: { accountId: input.accountId, platform: input.platform, handle: input.handle, lastQueueSyncAt: iso(input.lastQueueSyncAt), scheduledCountAtLastSync: c.scheduledCount },
-      suggestedAction: `Reconnect ${who} directly in Buffer. BrandPulse cannot reconnect channels; scheduled posts will not publish and coverage cannot be confirmed until it is reconnected.`,
+      suggestedAction: `Reconecte ${who} diretamente no Buffer. O SocialRadar não reconecta canais; os posts agendados não serão publicados e a cobertura não pode ser confirmada até a reconexão.`,
     });
   }
 
@@ -142,9 +142,9 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
       dedupeKey: `queue_paused:${input.accountId}`,
       type: "queue_paused",
       severity: "warning",
-      title: `Queue paused for ${who}`,
+      title: `Fila pausada em ${who}`,
       evidence: { accountId: input.accountId, scheduledCount: c.scheduledCount, nextScheduledAt: iso(c.nextScheduledAt) },
-      suggestedAction: `Resume the queue for ${who} in Buffer if the pause is not intentional; ${plural(c.scheduledCount, "scheduled post")} will not publish while it is paused.`,
+      suggestedAction: `Retome a fila de ${who} no Buffer se a pausa não for intencional; ${plural(c.scheduledCount, "post agendado", "posts agendados")} não serão publicados enquanto ela estiver pausada.`,
     });
   }
 
@@ -156,7 +156,7 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
         dedupeKey: `sync_stale:${input.accountId}`,
         type: "sync_stale",
         severity: never ? "info" : "warning",
-        title: never ? `No queue data yet for ${who}` : `Queue data for ${who} is out of date`,
+        title: never ? `Ainda não há dados da fila de ${who}` : `Os dados da fila de ${who} estão desatualizados`,
         evidence: {
           accountId: input.accountId,
           freshness: c.freshness,
@@ -165,8 +165,8 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
           scheduledCountAtLastSync: c.scheduledCount,
         },
         suggestedAction: never
-          ? `Wait for the first queue sync of ${who} (or run a sync for its connection); coverage cannot be confirmed until then.`
-          : `Check the Buffer connection and run a sync for ${who}; coverage figures come from the last successful sync and may not reflect recent changes.`,
+          ? `Aguarde a primeira sincronização da fila de ${who} (ou execute uma sincronização da conexão); até lá a cobertura não pode ser confirmada.`
+          : `Verifique a conexão com o Buffer e sincronize ${who}; os números de cobertura vêm da última sincronização bem-sucedida e podem não refletir mudanças recentes.`,
       });
     } else if (!input.isQueuePaused && (c.state === "empty" || c.state === "critical" || c.state === "warning")) {
       const empty = c.state === "empty";
@@ -177,8 +177,8 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
         type: empty ? "queue_empty" : "queue_coverage",
         severity: c.state === "warning" ? "warning" : "critical",
         title: empty
-          ? `No posts scheduled for ${who}`
-          : `Queue for ${who} covers only ${roundDays(coveredDays)} ${roundDays(coveredDays) === 1 ? "day" : "days"}`,
+          ? `Nenhum post agendado em ${who}`
+          : `A fila de ${who} cobre apenas ${roundDays(coveredDays)} ${roundDays(coveredDays) === 1 ? "dia" : "dias"}`,
         evidence: {
           accountId: input.accountId,
           state: c.state,
@@ -208,9 +208,9 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
       dedupeKey: `unresolved_times:${input.accountId}`,
       type: "unresolved_times",
       severity: "info",
-      title: `${plural(c.unresolvedCount, "pending post")} for ${who} ${c.unresolvedCount === 1 ? "has" : "have"} no confirmed publish time`,
+      title: `${plural(c.unresolvedCount, "post pendente", "posts pendentes")} de ${who} sem horário de publicação confirmado`,
       evidence: { accountId: input.accountId, unresolvedCount: c.unresolvedCount },
-      suggestedAction: `Approve or set a publish time in Buffer for the draft or awaiting-approval posts of ${who}; they do not count toward coverage until then.`,
+      suggestedAction: `Aprove ou defina um horário de publicação no Buffer para os rascunhos ou posts aguardando aprovação de ${who}; até lá eles não contam para a cobertura.`,
     });
   }
 
@@ -224,11 +224,11 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
       dedupeKey: `publish_failed:${err.postId}`,
       type: "publish_failed",
       severity: recent ? "critical" : "warning",
-      title: `Post failed to publish on ${who}`,
+      title: `Falha ao publicar post em ${who}`,
       evidence: { accountId: input.accountId, postId: err.postId, dueAt: iso(err.dueAt), providerMessage: err.message.slice(0, MAX_PROVIDER_MESSAGE) },
       suggestedAction: err.dueAt
-        ? `Review the error in Buffer, fix the post and reschedule it; its slot at ${fmt(err.dueAt, tz)} was not filled.`
-        : "Review the error in Buffer, fix the post and reschedule it.",
+        ? `Revise o erro no Buffer, corrija o post e reagende; o horário de ${fmt(err.dueAt, tz)} ficou vazio.`
+        : "Revise o erro no Buffer, corrija o post e reagende.",
     });
   }
 
@@ -244,11 +244,11 @@ export function evaluateAccountAlerts(input: AccountAlertInput): AlertCandidate[
       dedupeKey: `post_overdue:${input.accountId}`,
       type: "post_overdue",
       severity: likelyCause ? "info" : "warning",
-      title: `${plural(overdue.length, "scheduled post")} overdue on ${who}`,
+      title: `${plural(overdue.length, "post agendado", "posts agendados")} ${overdue.length === 1 ? "atrasado" : "atrasados"} em ${who}`,
       evidence: { accountId: input.accountId, count: overdue.length, postIds: overdue.map((o) => o.postId), oldestDueAt: iso(oldest.dueAt), likelyCause },
       suggestedAction: likelyCause
-        ? `These posts cannot publish while the account is ${likelyCause === "account_disconnected" ? "disconnected" : "paused"}; resolve that first, then check them in Buffer.`
-        : `Check ${overdue.length === 1 ? "this post" : "these posts"} in Buffer: due since ${fmt(oldest.dueAt, tz)} and still not sent. Reschedule or retry if Buffer shows no progress.`,
+        ? `Estes posts não podem ser publicados enquanto a conta estiver ${likelyCause === "account_disconnected" ? "desconectada" : "pausada"}; resolva isso primeiro e depois verifique no Buffer.`
+        : `Verifique ${overdue.length === 1 ? "este post" : "estes posts"} no Buffer: com horário desde ${fmt(oldest.dueAt, tz)} e ainda sem publicação. Reagende ou tente novamente se o Buffer não mostrar progresso.`,
     });
   }
 
@@ -293,9 +293,9 @@ export function evaluateConnectionAlerts(input: ConnectionAlertInput): AlertCand
       dedupeKey: `connection_failing:${input.connectionId}`,
       type: "connection_failing",
       severity: "critical",
-      title: "Buffer rejected this connection's API key",
+      title: "O Buffer rejeitou a chave de API desta conexão",
       evidence,
-      suggestedAction: "Re-enter a valid Buffer API key for this connection in Settings → Connections; nothing from its channels will sync until then.",
+      suggestedAction: "Informe novamente uma chave de API válida do Buffer em Configurações → Conexões; nada dos canais dessa conexão será sincronizado até lá.",
     });
   } else if (input.consecutiveFailures >= threshold) {
     const throttled = THROTTLE_ERRORS.has(input.lastErrorCode ?? "");
@@ -305,12 +305,12 @@ export function evaluateConnectionAlerts(input: ConnectionAlertInput): AlertCand
       type: "connection_failing",
       severity: input.consecutiveFailures >= threshold * 2 && !throttled ? "critical" : "warning",
       title: throttled
-        ? `Buffer sync throttled ${plural(input.consecutiveFailures, "time")} in a row`
-        : `Buffer sync failed ${plural(input.consecutiveFailures, "time")} in a row`,
+        ? `Sincronização do Buffer limitada ${plural(input.consecutiveFailures, "vez", "vezes")} seguidas`
+        : `Falha na sincronização do Buffer ${plural(input.consecutiveFailures, "vez", "vezes")} seguidas`,
       evidence,
       suggestedAction: throttled
-        ? "Sync retries automatically after the rate-limit window. Avoid manual syncs and stagger connections that share a Buffer account."
-        : "Check Buffer's status and this connection's last error; syncs retry automatically. If failures continue, re-validate the API key in Settings → Connections.",
+        ? "A sincronização é repetida automaticamente após a janela de limite. Evite sincronizações manuais e distribua as conexões que compartilham a mesma conta do Buffer."
+        : "Verifique o status do Buffer e o último erro desta conexão; as sincronizações são repetidas automaticamente. Se as falhas continuarem, valide novamente a chave de API em Configurações → Conexões.",
     });
   }
 
@@ -323,11 +323,11 @@ export function evaluateConnectionAlerts(input: ConnectionAlertInput): AlertCand
         dedupeKey: `sync_stale:connection:${input.connectionId}`,
         type: "sync_stale",
         severity: ageMs !== null && ageMs > staleMs * 4 ? "critical" : "warning",
-        title: input.lastSyncSuccessAt ? "Buffer connection has not synced recently" : "Buffer connection has never synced successfully",
+        title: input.lastSyncSuccessAt ? "A conexão com o Buffer não sincroniza há algum tempo" : "A conexão com o Buffer nunca sincronizou com sucesso",
         evidence: { ...evidence, staleAfterMinutes: input.staleAfterMinutes },
         suggestedAction: input.lastSyncSuccessAt
-          ? `Last successful sync ${fmt(input.lastSyncSuccessAt, "UTC")}. Check that the sync worker is running; data from this connection may be out of date.`
-          : "Check that the sync worker is running and run a first sync for this connection.",
+          ? `Última sincronização bem-sucedida em ${fmt(input.lastSyncSuccessAt, "UTC")}. Verifique se o processo de sincronização está ativo; os dados desta conexão podem estar desatualizados.`
+          : "Verifique se o processo de sincronização está ativo e execute a primeira sincronização desta conexão.",
       });
     }
   }

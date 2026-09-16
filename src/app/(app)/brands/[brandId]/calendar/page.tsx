@@ -9,7 +9,7 @@ import { getDb } from "@/server/db/client";
 import { loadCalendar } from "@/server/queries/pages/calendar";
 import { oneOf, orNotFound, param, type SearchParams } from "@/server/queries/pages/guard";
 
-export const metadata: Metadata = { title: "Content calendar" };
+export const metadata: Metadata = { title: "Calendário de conteúdo" };
 
 export default async function CalendarPage({ params, searchParams }: { params: Promise<{ brandId: string }>; searchParams: Promise<SearchParams> }) {
   const { brandId } = await params;
@@ -26,36 +26,36 @@ export default async function CalendarPage({ params, searchParams }: { params: P
     if (account) q.set("account", account);
     return `${base}?${q.toString()}`;
   };
-  const scopeName = vm.accountFilter ? `@${vm.accounts.find((a) => a.id === vm.accountFilter)?.handle.replace(/^@/, "") ?? "this account"}` : vm.brand.name;
+  const scopeName = vm.accountFilter ? `@${vm.accounts.find((a) => a.id === vm.accountFilter)?.handle.replace(/^@/, "") ?? "esta conta"}` : vm.brand.name;
 
   return (
     <>
       <PageHeader
-        title="Content calendar"
-        subtitle={`Scheduled and published posts with expected cadence slots. Times in ${vm.brand.timezone} (${vm.brand.zone}).`}
+        title="Calendário de conteúdo"
+        subtitle={`Posts agendados e publicados com os horários previstos da cadência. Horários em ${vm.brand.timezone} (${vm.brand.zone}).`}
         meta={<Freshness vm={vm.freshness} />}
       />
 
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={href({ date: vm.prevAnchor })} className="btn btn-secondary" aria-label={`Previous ${vm.view}`}>
-            ‹ Prev
+          <Link href={href({ date: vm.prevAnchor })} className="btn btn-secondary" aria-label={vm.view === "month" ? "Mês anterior" : "Semana anterior"}>
+            ‹ Anterior
           </Link>
           <Link href={href({ date: vm.todayAnchor })} className="btn btn-secondary">
-            Today
+            Hoje
           </Link>
-          <Link href={href({ date: vm.nextAnchor })} className="btn btn-secondary" aria-label={`Next ${vm.view}`}>
-            Next ›
+          <Link href={href({ date: vm.nextAnchor })} className="btn btn-secondary" aria-label={vm.view === "month" ? "Próximo mês" : "Próxima semana"}>
+            Próximo ›
           </Link>
           <h2 className="ml-1 text-lg font-semibold" aria-live="polite">
             {vm.title}
           </h2>
         </div>
         <div className="flex flex-wrap items-end gap-2">
-          <div role="group" aria-label="Calendar view" className="flex gap-1">
+          <div role="group" aria-label="Visualização do calendário" className="flex gap-1">
             {(["month", "week"] as const).map((v) => (
               <Link key={v} href={href({ view: v })} aria-current={v === vm.view ? "true" : undefined} className={`btn ${v === vm.view ? "btn-primary" : "btn-secondary"}`}>
-                {v === "month" ? "Month" : "Week"}
+                {v === "month" ? "Mês" : "Semana"}
               </Link>
             ))}
           </div>
@@ -64,10 +64,10 @@ export default async function CalendarPage({ params, searchParams }: { params: P
             <input type="hidden" name="date" value={vm.anchor} />
             <div>
               <label htmlFor="cal-account" className="label text-xs">
-                Account
+                Conta
               </label>
               <select id="cal-account" name="account" defaultValue={vm.accountFilter ?? ""} className="input">
-                <option value="">All accounts</option>
+                <option value="">Todas as contas</option>
                 {vm.accounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     @{a.handle.replace(/^@/, "")} ({a.platformLabel})
@@ -76,17 +76,17 @@ export default async function CalendarPage({ params, searchParams }: { params: P
               </select>
             </div>
             <button type="submit" className="btn btn-secondary">
-              Apply
+              Aplicar
             </button>
           </form>
         </div>
       </div>
 
       {vm.error ? <ErrorBanner message={vm.error} retryHref={href({})} /> : null}
-      {vm.freshness.level !== "fresh" ? <Banner tone="stale">{vm.freshness.label} — scheduled content added in Buffer since then isn&apos;t shown yet.</Banner> : null}
+      {vm.freshness.level !== "fresh" ? <Banner tone="stale">{vm.freshness.label} — conteúdo agendado no Buffer desde então ainda não aparece aqui.</Banner> : null}
       {vm.upcomingEmpty ? (
         <Banner tone="warning" role="status">
-          No scheduled content found for {scopeName} in this view.
+          Nenhum conteúdo agendado encontrado para {scopeName} nesta visualização.
         </Banner>
       ) : null}
       {vm.accounts.filter((a) => a.unavailable).length ? (
@@ -96,7 +96,7 @@ export default async function CalendarPage({ params, searchParams }: { params: P
               .filter((a) => a.unavailable)
               .map((a) => (
                 <li key={a.id}>
-                  <strong>@{a.handle.replace(/^@/, "")}</strong> ({a.platformLabel}): {a.unavailable}. An empty lane here doesn&apos;t mean &ldquo;no posts&rdquo;.
+                  <strong>@{a.handle.replace(/^@/, "")}</strong> ({a.platformLabel}): {a.unavailable}. Uma faixa vazia aqui não significa &ldquo;sem posts&rdquo;.
                 </li>
               ))}
           </ul>
@@ -106,12 +106,12 @@ export default async function CalendarPage({ params, searchParams }: { params: P
       <CalendarLegend />
 
       {vm.accounts.length === 0 ? (
-        <EmptyState title="No accounts are mapped to this brand yet." />
+        <EmptyState title="Nenhuma conta está mapeada para esta marca ainda." />
       ) : vm.view === "month" ? (
         <div className="overflow-x-auto rounded-lg border border-line bg-surface">
           <table className="w-full min-w-[760px] table-fixed text-left">
             <caption className="sr-only">
-              {vm.title} calendar for {scopeName}
+              Calendário de {vm.title} para {scopeName}
             </caption>
             <thead>
               <tr>
@@ -130,7 +130,7 @@ export default async function CalendarPage({ params, searchParams }: { params: P
                       <div className={`px-1 pt-1 text-xs ${cell.isToday ? "font-bold text-accent" : cell.inMonth ? "text-ink" : "text-ink-2"}`}>
                         <span className="sr-only">{cell.label}</span>
                         <span aria-hidden>{cell.dayNum}</span>
-                        {cell.isToday ? <span className="ml-1">Today</span> : null}
+                        {cell.isToday ? <span className="ml-1">Hoje</span> : null}
                       </div>
                       <CellContent cell={cell} showHandles={!vm.accountFilter} maxItems={4} />
                     </td>
@@ -144,17 +144,17 @@ export default async function CalendarPage({ params, searchParams }: { params: P
         <div className="overflow-x-auto rounded-lg border border-line bg-surface">
           <table className="w-full min-w-[900px] table-fixed text-left">
             <caption className="sr-only">
-              {vm.title}: one lane per account for {scopeName}
+              {vm.title}: uma faixa por conta para {scopeName}
             </caption>
             <thead>
               <tr>
                 <th scope="col" className="w-36 border-b border-line px-2 py-2 text-xs font-semibold text-ink-2">
-                  Account
+                  Conta
                 </th>
                 {vm.lanes[0]?.cells.map((c) => (
                   <th key={c.key} scope="col" className={`border-b border-line px-2 py-2 text-xs font-semibold ${c.isToday ? "text-accent" : "text-ink-2"}`}>
                     {c.label}
-                    {c.isToday ? " · Today" : ""}
+                    {c.isToday ? " · Hoje" : ""}
                   </th>
                 ))}
               </tr>
@@ -185,10 +185,10 @@ export default async function CalendarPage({ params, searchParams }: { params: P
       )}
 
       <Card labelledBy="unconfirmed" className="mt-4">
-        <CardTitle id="unconfirmed">Time not confirmed</CardTitle>
-        <p className="mb-2 text-xs text-ink-2">Drafts, posts awaiting approval and posts without a resolved publish time. They never count as coverage.</p>
+        <CardTitle id="unconfirmed">Horário não confirmado</CardTitle>
+        <p className="mb-2 text-xs text-ink-2">Rascunhos, posts aguardando aprovação e posts sem horário de publicação definido. Eles nunca contam como cobertura.</p>
         {vm.unconfirmed.length === 0 ? (
-          <p className="text-sm text-ink-2">No pending posts without a confirmed time.</p>
+          <p className="text-sm text-ink-2">Nenhum post pendente sem horário confirmado.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {vm.unconfirmed.map((i) => (

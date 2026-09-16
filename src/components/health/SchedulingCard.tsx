@@ -23,7 +23,7 @@ function Field({ term, definition, value, sub, emphasize }: { term: string; defi
 export function SchedulingCard({ vm, headingId, detailHref }: { vm: AccountHealthVM; headingId: string; detailHref?: string }) {
   const s = vm.scheduling;
   const u = s.unavailable;
-  const na = (v: string | null, empty = "None") => (u ? u : (v ?? empty));
+  const na = (v: string | null, empty = "Nenhum") => (u ? u : (v ?? empty));
   return (
     <section aria-labelledby={headingId} className="rounded-lg border border-line bg-surface p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
@@ -35,14 +35,14 @@ export function SchedulingCard({ vm, headingId, detailHref }: { vm: AccountHealt
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <StatusBadge status={vm.status} stale={!!vm.stale} staleLabel={vm.stale?.label} note={vm.statusNote} />
             {vm.connectionIssue ? <Pill tone="critical">{vm.connectionIssue}</Pill> : null}
-            {s.isEstimate ? <Pill tone="warning">Estimates</Pill> : null}
+            {s.isEstimate ? <Pill tone="warning">Estimativas</Pill> : null}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           <Freshness vm={vm.freshness} />
           {detailHref ? (
             <Link href={detailHref} className="link text-sm">
-              Account detail
+              Detalhe da conta
             </Link>
           ) : null}
         </div>
@@ -50,8 +50,8 @@ export function SchedulingCard({ vm, headingId, detailHref }: { vm: AccountHealt
 
       {u ? (
         <p className="mb-3 rounded-md border border-disconnected/30 bg-disconnected/5 p-2 text-sm text-ink">
-          This account is disconnected from Buffer. We can&apos;t retrieve current queue or performance data. Reconnect it directly in
-          Buffer, then it will sync here again.
+          Esta conta está desconectada do Buffer. Não conseguimos obter os dados atuais de fila nem de desempenho. Reconecte-a
+          diretamente no Buffer para que ela volte a sincronizar aqui.
         </p>
       ) : null}
       {!u && s.emptyCopy ? (
@@ -62,64 +62,64 @@ export function SchedulingCard({ vm, headingId, detailHref }: { vm: AccountHealt
       {!u && s.pausedCopy ? <p className="mb-3 rounded-md border border-paused/30 bg-paused/5 p-2 text-sm text-ink">{s.pausedCopy}</p> : null}
       {!u && vm.stale ? (
         <p className="mb-3 rounded-md border border-stale/40 bg-[#fdf6e3] p-2 text-sm text-ink">
-          {vm.freshness.label} — figures below may not reflect the very latest changes in Buffer.
+          {vm.freshness.label} — os números abaixo podem não refletir as mudanças mais recentes no Buffer.
         </p>
       ) : null}
 
       <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        <Field term="Scheduled posts" value={u ? u : s.scheduledCount} sub={u ? null : s.nextScheduled ? `Next: ${s.nextScheduled}` : "Next: none scheduled"} />
-        <Field term="Last scheduled date" definition={DEFINITIONS.lastScheduled} value={na(s.lastScheduled)} />
+        <Field term="Posts agendados" value={u ? u : s.scheduledCount} sub={u ? null : s.nextScheduled ? `Próximo: ${s.nextScheduled}` : "Próximo: nenhum agendado"} />
+        <Field term="Último post agendado" definition={DEFINITIONS.lastScheduled} value={na(s.lastScheduled)} />
         <Field
-          term="Cadence coverage"
+          term="Cobertura da cadência"
           definition={DEFINITIONS.coverage}
           emphasize
-          value={u ? u : (s.coveragePct ?? "No expected slots")}
-          sub={u ? null : `${s.coveredSlots} of ${s.expectedSlots} expected slots covered · ${s.horizonLabel}`}
+          value={u ? u : (s.coveragePct ?? "Sem horários esperados")}
+          sub={u ? null : `${s.coveredSlots} de ${s.expectedSlots} horários esperados cobertos · ${s.horizonLabel}`}
         />
         <Field
-          term="First uncovered slot"
+          term="Primeiro horário descoberto"
           definition={DEFINITIONS.firstUncovered}
           emphasize
-          value={u ? u : (s.firstUncoveredSlot ?? (s.expectedSlots > 0 ? "All slots covered in horizon" : "None"))}
-          sub={u || !s.firstUncoveredRelative ? null : `${s.firstUncoveredRelative}${s.coveredDays ? ` · continuous coverage ${s.coveredDays}` : ""}`}
+          value={u ? u : (s.firstUncoveredSlot ?? (s.expectedSlots > 0 ? "Todos os horários cobertos no horizonte" : "Nenhum"))}
+          sub={u || !s.firstUncoveredRelative ? null : `${s.firstUncoveredRelative}${s.coveredDays ? ` · cobertura contínua ${s.coveredDays}` : ""}`}
         />
         <Field
-          term="Estimated runway"
+          term="Autonomia estimada da fila"
           definition={DEFINITIONS.runway}
           value={
             u ? (
               u
             ) : (
               <span className="inline-flex items-center gap-2">
-                {s.runway ?? "N/A"} <Pill tone="neutral">Estimate</Pill>
+                {s.runway ?? "Indisponível"} <Pill tone="neutral">Estimativa</Pill>
               </span>
             )
           }
         />
         <Field
-          term="Posts needed"
+          term="Posts necessários"
           definition={DEFINITIONS.postsNeeded}
-          value={u ? u : s.postsNeeded === 0 ? "None" : `Schedule ${s.postsNeeded} more`}
-          sub={u ? null : `to stay covered through ${s.horizonEnd}`}
+          value={u ? u : s.postsNeeded === 0 ? "Nenhum" : `Agende mais ${s.postsNeeded}`}
+          sub={u ? null : `para seguir coberto até ${s.horizonEnd}`}
         />
-        <Field term="Deadline to fill first gap" definition={DEFINITIONS.fillDeadline} value={na(s.fillDeadline, "No gap in horizon")} />
+        <Field term="Prazo para preencher a primeira lacuna" definition={DEFINITIONS.fillDeadline} value={na(s.fillDeadline, "Sem lacunas no horizonte")} />
         <Field
-          term="Unresolved items"
+          term="Itens pendentes"
           value={u ? u : s.unresolvedCount}
-          sub={u ? null : "Drafts / awaiting approval / no confirmed time — never counted as coverage"}
+          sub={u ? null : "Rascunhos / aguardando aprovação / sem horário confirmado — nunca contam como cobertura"}
         />
         <Field
-          term="Publishing problems"
+          term="Problemas de publicação"
           value={
             u ? (
               u
             ) : (
               <span className={s.overdueCount + s.failedCount > 0 ? "text-critical" : ""}>
-                {s.overdueCount} overdue · {s.failedCount} failed
+                {s.overdueCount} atrasados · {s.failedCount} com falha
               </span>
             )
           }
-          sub={u ? null : "Failed posts from the last 14 days"}
+          sub={u ? null : "Posts com falha nos últimos 14 dias"}
         />
       </dl>
 
@@ -131,10 +131,10 @@ export function SchedulingCard({ vm, headingId, detailHref }: { vm: AccountHealt
       ) : null}
       {s.notes.length > 0 ? (
         <details className="mt-3 text-sm">
-          <summary className="link cursor-pointer">How these figures were calculated ({s.notes.length})</summary>
+          <summary className="link cursor-pointer">Como estes números foram calculados ({s.notes.length})</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-ink-2">
             <li>
-              Cadence: {s.cadenceLabel}. Times shown in {vm.cadenceTimezone} ({vm.cadenceZoneLabel}).
+              Cadência: {s.cadenceLabel}. Horários exibidos em {vm.cadenceTimezone} ({vm.cadenceZoneLabel}).
             </li>
             {s.notes.map((n) => (
               <li key={n}>{n}</li>
@@ -143,7 +143,7 @@ export function SchedulingCard({ vm, headingId, detailHref }: { vm: AccountHealt
         </details>
       ) : (
         <p className="mt-3 text-xs text-ink-2">
-          Cadence: {s.cadenceLabel}. Times shown in {vm.cadenceTimezone} ({vm.cadenceZoneLabel}).
+          Cadência: {s.cadenceLabel}. Horários exibidos em {vm.cadenceTimezone} ({vm.cadenceZoneLabel}).
         </p>
       )}
     </section>

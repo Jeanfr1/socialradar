@@ -8,7 +8,7 @@ export function MetricCell({ cell }: { cell: MetricCellVM }) {
     <span className="inline-flex items-center whitespace-nowrap">
       <span className={`tabular-nums ${muted ? "text-xs italic text-ink-2" : ""}`}>{cell.display}</span>
       {cell.tip ? (
-        <InfoTip label={`About this ${cell.label} value`} align="right">
+        <InfoTip label={`Sobre este valor de ${cell.label}`} align="right">
           {cell.tip}
         </InfoTip>
       ) : null}
@@ -21,13 +21,13 @@ export function ErCell({ cell }: { cell: ErCellVM }) {
     <span className="inline-flex flex-col">
       <span className="inline-flex items-center whitespace-nowrap">
         <span className={`tabular-nums ${cell.value === null ? "text-xs italic text-ink-2" : "font-medium"}`}>{cell.display}</span>
-        <InfoTip label="About this engagement rate" align="right">
+        <InfoTip label="Sobre esta taxa de engajamento" align="right">
           {cell.definition}
-          {cell.naReason ? ` N/A because: ${cell.naReason}` : ""}
+          {cell.naReason ? ` Indisponível porque: ${cell.naReason}` : ""}
           {cell.zeroUncertainty ? ` * ${DEFINITIONS.ambiguousZero}` : ""}
         </InfoTip>
       </span>
-      {cell.denominator ? <span className="text-[11px] text-ink-2">by {cell.denominator}</span> : null}
+      {cell.denominator ? <span className="text-[11px] text-ink-2">por {cell.denominator}</span> : null}
     </span>
   );
 }

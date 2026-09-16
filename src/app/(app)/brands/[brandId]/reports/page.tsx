@@ -12,7 +12,7 @@ import { getDb } from "@/server/db/client";
 import { orNotFound } from "@/server/queries/pages/guard";
 import { loadReportList, type ReportVersionVM } from "@/server/queries/pages/reports";
 
-export const metadata: Metadata = { title: "Weekly reports" };
+export const metadata: Metadata = { title: "Relatórios semanais" };
 
 function StatusPill({ v }: { v: ReportVersionVM }) {
   const tone = v.status === "final" ? "healthy" : v.status === "preliminary" ? "stale" : v.status === "failed" ? "critical" : "neutral";
@@ -42,18 +42,18 @@ export default async function ReportsPage({ params }: { params: Promise<{ brandI
   return (
     <>
       <PageHeader
-        title="Weekly reports"
-        subtitle={`Report narratives are written in the brand's report language (${vm.brand.reportLocale}); the interface stays in English. Weeks run Monday–Sunday in ${vm.brand.timezone}.`}
-        meta={vm.nextRun ? <span>Next scheduled report: {vm.nextRun}</span> : <span>Automatic weekly reports are turned off for this brand.</span>}
+        title="Relatórios semanais"
+        subtitle={`As narrativas do relatório são escritas no idioma de relatório da marca (${vm.brand.reportLocale}). As semanas vão de segunda a domingo em ${vm.brand.timezone}.`}
+        meta={vm.nextRun ? <span>Próximo relatório agendado: {vm.nextRun}</span> : <span>Os relatórios semanais automáticos estão desativados para esta marca.</span>}
       />
 
       {vm.canRegenerate ? (
         <Card labelledBy="regen" className="mb-4">
-          <CardTitle id="regen">Generate a new version</CardTitle>
-          <ActionForm action={regenerateReportAction} hidden={{ brandId: vm.brand.id }} submitLabel="Regenerate report" pendingLabel="Generating… this can take a minute" inline>
+          <CardTitle id="regen">Gerar uma nova versão</CardTitle>
+          <ActionForm action={regenerateReportAction} hidden={{ brandId: vm.brand.id }} submitLabel="Gerar novamente" pendingLabel="Gerando… isso pode levar um minuto" inline>
             <div>
               <label htmlFor="period" className="label text-xs">
-                Week
+                Semana
               </label>
               <select id="period" name="periodStart" defaultValue={vm.defaultPeriod} className="input">
                 {vm.periodOptions.map((o) => (
@@ -64,13 +64,13 @@ export default async function ReportsPage({ params }: { params: Promise<{ brandI
               </select>
             </div>
           </ActionForm>
-          <p className="text-xs text-ink-2">A new version is added to the week&apos;s history; earlier versions stay available.</p>
+          <p className="text-xs text-ink-2">Uma nova versão é adicionada ao histórico da semana; as versões anteriores continuam disponíveis.</p>
         </Card>
       ) : null}
 
       {vm.weeks.length === 0 ? (
-        <EmptyState title="No reports yet.">
-          {vm.nextRun ? `The first weekly report will generate on ${vm.nextRun}.` : "Automatic weekly reports are turned off; a manager can generate one above."}
+        <EmptyState title="Nenhum relatório ainda.">
+          {vm.nextRun ? `O primeiro relatório semanal será gerado em ${vm.nextRun}.` : "Os relatórios semanais automáticos estão desativados; um gerente pode gerar um acima."}
         </EmptyState>
       ) : (
         <ul className="space-y-3">
@@ -83,22 +83,22 @@ export default async function ReportsPage({ params }: { params: Promise<{ brandI
                     <StatusPill v={w.latest} />
                     <Pill>{w.latest.locale.toUpperCase()}</Pill>
                     <span>v{w.latest.version}</span>
-                    <span>{w.latest.trigger === "scheduled" ? "Scheduled" : "Manual"}</span>
-                    <span>{w.latest.generated ? `Generated ${w.latest.generated}` : "Not generated yet"}</span>
+                    <span>{w.latest.trigger === "scheduled" ? "Agendado" : "Manual"}</span>
+                    <span>{w.latest.generated ? `Gerado ${w.latest.generated}` : "Ainda não gerado"}</span>
                     {vm.brand.isDemo ? <DemoBadge /> : null}
                   </div>
                   {w.latest.status === "failed" && w.latest.errorMessage ? <p className="mt-1 text-xs text-critical">{w.latest.errorMessage}</p> : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link href={`${base}/${w.latest.id}`} className="btn btn-primary min-h-9 px-3">
-                    {w.latest.status === "failed" ? "View partial report" : "View"}
+                    {w.latest.status === "failed" ? "Ver relatório parcial" : "Ver"}
                   </Link>
                   <Downloads v={w.latest} />
                 </div>
               </div>
               {w.older.length ? (
                 <details className="mt-3 text-sm">
-                  <summary className="link cursor-pointer">Version history ({w.older.length} earlier)</summary>
+                  <summary className="link cursor-pointer">Histórico de versões ({w.older.length} anteriores)</summary>
                   <ul className="mt-2 divide-y divide-line">
                     {w.older.map((v) => (
                       <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
@@ -107,7 +107,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ brandI
                         </span>
                         <span className="flex flex-wrap gap-2">
                           <Link href={`${base}/${v.id}`} className="link">
-                            View
+                            Ver
                           </Link>
                           <Downloads v={v} />
                         </span>

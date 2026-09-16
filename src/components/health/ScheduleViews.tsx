@@ -19,8 +19,8 @@ export function PostingScheduleGrid({ days, caption }: { days: AccountDetailVM["
           <tr>
             {days.map((d) => (
               <td key={d.day} className={d.paused ? "hatch-unavailable" : ""}>
-                {d.paused ? <span className="rounded bg-surface px-1 text-xs font-medium text-paused">Paused</span> : null}
-                {d.times.length === 0 && !d.paused ? <span className="text-xs text-ink-2">No slots</span> : null}
+                {d.paused ? <span className="rounded bg-surface px-1 text-xs font-medium text-paused">Pausado</span> : null}
+                {d.times.length === 0 && !d.paused ? <span className="text-xs text-ink-2">Sem horários</span> : null}
                 <ul className="space-y-0.5 tabular-nums">
                   {d.times.map((t) => (
                     <li key={t}>{t}</li>
@@ -37,7 +37,7 @@ export function PostingScheduleGrid({ days, caption }: { days: AccountDetailVM["
 
 /** Expected slots in the coverage horizon, grouped by local day, marked covered / uncovered (icon + text). */
 export function CoverageSlotsTimeline({ days }: { days: AccountDetailVM["slotDays"] }) {
-  if (days.length === 0) return <p className="text-sm text-ink-2">No expected slots in the horizon.</p>;
+  if (days.length === 0) return <p className="text-sm text-ink-2">Sem horários esperados no horizonte.</p>;
   return (
     <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
       {days.map((d) => {
@@ -52,7 +52,7 @@ export function CoverageSlotsTimeline({ days }: { days: AccountDetailVM["slotDay
                     <span aria-hidden className={s.covered ? "text-healthy" : "text-critical"}>
                       {s.covered ? "●" : "○"}
                     </span>
-                    {s.time} <span className={s.covered ? "text-healthy" : "font-semibold text-critical"}>{s.covered ? "Covered" : "Uncovered"}</span>
+                    {s.time} <span className={s.covered ? "text-healthy" : "font-semibold text-critical"}>{s.covered ? "Coberto" : "Descoberto"}</span>
                   </li>
                 ))}
               </ul>

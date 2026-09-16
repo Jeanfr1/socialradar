@@ -88,7 +88,7 @@ export function Pill({ children, tone = "neutral", title }: { children: React.Re
 }
 
 export function SeverityBadge({ severity }: { severity: "info" | "warning" | "critical" }) {
-  if (severity === "critical") return <Chip icon="alert-octagon" label="Critical" tip={STATUS_COPY.critical.tip} cls={STYLE.critical.cls} />;
-  if (severity === "warning") return <Chip icon="alert-triangle" label="Warning" tip="Warning: needs attention soon, but not yet urgent." cls={STYLE.warning.cls} />;
-  return <Chip icon="info" label="Info" tip="Info: worth knowing; no immediate action required." cls="text-accent border-accent/30 bg-accent-soft" />;
+  if (severity === "critical") return <Chip icon="alert-octagon" label="Crítico" tip={STATUS_COPY.critical.tip} cls={STYLE.critical.cls} />;
+  if (severity === "warning") return <Chip icon="alert-triangle" label="Atenção" tip="Atenção: precisa de atenção em breve, mas ainda não é urgente." cls={STYLE.warning.cls} />;
+  return <Chip icon="info" label="Informação" tip="Informação: vale saber; nenhuma ação imediata é necessária." cls="text-accent border-accent/30 bg-accent-soft" />;
 }

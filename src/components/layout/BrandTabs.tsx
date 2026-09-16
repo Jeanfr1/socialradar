@@ -8,14 +8,14 @@ export function BrandTabs({ brandId, canManage }: { brandId: string; canManage: 
   const base = `/brands/${brandId}`;
   const tabs = [
     { href: base, label: "Dashboard", match: (p: string) => p === base || p.startsWith(`${base}/accounts`) },
-    { href: `${base}/calendar`, label: "Calendar" },
-    { href: `${base}/content`, label: "Content" },
-    { href: `${base}/recommendations`, label: "Recommendations" },
-    { href: `${base}/reports`, label: "Reports" },
-    ...(canManage ? [{ href: `/settings/brands/${brandId}`, label: "Settings" }] : []),
+    { href: `${base}/calendar`, label: "Calendário" },
+    { href: `${base}/content`, label: "Conteúdo" },
+    { href: `${base}/recommendations`, label: "Recomendações" },
+    { href: `${base}/reports`, label: "Relatórios" },
+    ...(canManage ? [{ href: `/settings/brands/${brandId}`, label: "Configurações" }] : []),
   ];
   return (
-    <nav aria-label="Brand sections" className="-mx-1 mb-5 overflow-x-auto border-b border-line">
+    <nav aria-label="Seções da marca" className="-mx-1 mb-5 overflow-x-auto border-b border-line">
       <ul className="flex min-w-max gap-1 px-1">
         {tabs.map((t) => {
           const active = "match" in t && t.match ? t.match(pathname) : pathname === t.href || pathname.startsWith(`${t.href}/`);

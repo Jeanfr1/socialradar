@@ -8,10 +8,10 @@ import type { ActionResult } from "@/components/forms/action-result";
 import { fail, ok, optionalStr, str, toActionError, uuidField } from "./_util";
 
 const STATUS_MESSAGE: Record<string, string> = {
-  accepted: "Recommendation accepted.",
-  dismissed: "Recommendation dismissed. It won't be proposed again for 30 days.",
-  done: "Recommendation marked as done.",
-  proposed: "Recommendation restored.",
+  accepted: "Recomendação aceita.",
+  dismissed: "Recomendação descartada. Ela não será proposta novamente por 30 dias.",
+  done: "Recomendação marcada como concluída.",
+  proposed: "Recomendação restaurada.",
 };
 
 function revalidate(brandId: string) {
@@ -24,10 +24,10 @@ export async function recommendationStatusAction(_prev: ActionResult, formData: 
     const user = await requireUser("action");
     const brandId = uuidField(formData, "brandId");
     const status = str(formData, "status");
-    if (!["accepted", "dismissed", "done", "proposed"].includes(status)) return fail("Choose a valid status.");
+    if (!["accepted", "dismissed", "done", "proposed"].includes(status)) return fail("Escolha um status válido.");
     await updateRecommendationStatus(getDb(), user, uuidField(formData, "recommendationId"), status as "accepted" | "dismissed" | "done" | "proposed");
     revalidate(brandId);
-    return ok(STATUS_MESSAGE[status] ?? "Updated.");
+    return ok(STATUS_MESSAGE[status] ?? "Atualizado.");
   } catch (err) {
     return toActionError(err, "recommendationStatus");
   }
@@ -44,7 +44,7 @@ export async function createExperimentAction(_prev: ActionResult, formData: Form
       endDate: str(formData, "endDate"),
     });
     revalidate(brandId);
-    return ok(exp.status === "running" ? `Now trying this until ${exp.endDate}.` : `Experiment planned from ${exp.startDate} to ${exp.endDate}.`);
+    return ok(exp.status === "running" ? `Em teste até ${exp.endDate}.` : `Experimento planejado de ${exp.startDate} a ${exp.endDate}.`);
   } catch (err) {
     return toActionError(err, "createExperiment");
   }
@@ -58,7 +58,7 @@ export async function updateExperimentAction(_prev: ActionResult, formData: Form
     const status = str(formData, "status");
     const patch: Parameters<typeof updateExperiment>[3] = {};
     if (status) {
-      if (!["planned", "running", "completed", "abandoned"].includes(status)) return fail("Choose a valid status.");
+      if (!["planned", "running", "completed", "abandoned"].includes(status)) return fail("Escolha um status válido.");
       patch.status = status as "planned" | "running" | "completed" | "abandoned";
     }
     const endDate = str(formData, "endDate");
@@ -66,7 +66,7 @@ export async function updateExperimentAction(_prev: ActionResult, formData: Form
     if (formData.has("resultSummary")) patch.resultSummary = optionalStr(formData, "resultSummary");
     await updateExperiment(getDb(), user, uuidField(formData, "experimentId"), patch);
     revalidate(brandId);
-    return ok("Experiment updated.");
+    return ok("Experimento atualizado.");
   } catch (err) {
     return toActionError(err, "updateExperiment");
   }

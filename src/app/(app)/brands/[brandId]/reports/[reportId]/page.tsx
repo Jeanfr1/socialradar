@@ -13,7 +13,7 @@ import { getDb } from "@/server/db/client";
 import { orNotFound } from "@/server/queries/pages/guard";
 import { loadReportView } from "@/server/queries/pages/reports";
 
-export const metadata: Metadata = { title: "Weekly report" };
+export const metadata: Metadata = { title: "Relatório semanal" };
 
 export default async function ReportPage({ params }: { params: Promise<{ brandId: string; reportId: string }> }) {
   const { brandId, reportId } = await params;
@@ -27,19 +27,19 @@ export default async function ReportPage({ params }: { params: Promise<{ brandId
     <>
       <p className="mb-2 text-sm">
         <Link href={base} className="link">
-          ← All reports
+          ← Todos os relatórios
         </Link>
       </p>
       <PageHeader
-        title={`Weekly report: ${r.weekLabel}`}
+        title={`Relatório semanal: ${r.weekLabel}`}
         meta={
           <>
             <Pill tone={r.status === "final" ? "healthy" : r.status === "preliminary" ? "stale" : r.status === "failed" ? "critical" : "neutral"}>{r.statusLabel}</Pill>
             <Pill>{r.locale.toUpperCase()}</Pill>
-            <span>Version {r.version}</span>
-            <span>{r.trigger === "scheduled" ? "Scheduled" : "Manual"}</span>
-            <span>{r.generated ? `Generated ${r.generated}` : "Not generated yet"}</span>
-            {r.narrativeSource ? <span>Narrative: {r.narrativeSource === "ai" ? "AI-assisted (validated against facts)" : "deterministic"}</span> : null}
+            <span>Versão {r.version}</span>
+            <span>{r.trigger === "scheduled" ? "Agendado" : "Manual"}</span>
+            <span>{r.generated ? `Gerado ${r.generated}` : "Ainda não gerado"}</span>
+            {r.narrativeSource ? <span>Narrativa: {r.narrativeSource === "ai" ? "assistida por IA (validada contra os fatos)" : "determinística"}</span> : null}
             {r.isDemo || vm.brand.isDemo ? <DemoBadge /> : null}
           </>
         }
@@ -47,10 +47,10 @@ export default async function ReportPage({ params }: { params: Promise<{ brandId
           r.canDownload ? (
             <>
               <a href={`/api/reports/${r.id}/pdf`} className="btn btn-secondary">
-                <Icon name="download" /> Download PDF
+                <Icon name="download" /> Baixar PDF
               </a>
               <a href={`/api/reports/${r.id}/csv`} className="btn btn-secondary">
-                <Icon name="download" /> Download CSV
+                <Icon name="download" /> Baixar CSV
               </a>
             </>
           ) : null
@@ -59,31 +59,31 @@ export default async function ReportPage({ params }: { params: Promise<{ brandId
 
       {latest && latest.id !== r.id ? (
         <Banner tone="info">
-          You are viewing version {r.version}. A newer version exists:{" "}
+          Você está vendo a versão {r.version}. Existe uma versão mais recente:{" "}
           <Link href={`${base}/${latest.id}`} className="link">
-            open version {latest.version} ({latest.statusLabel})
+            abrir a versão {latest.version} ({latest.statusLabel})
           </Link>
           .
         </Banner>
       ) : null}
       {r.status === "preliminary" || r.isPreliminary ? (
         <Banner tone="stale" role="status">
-          This report was generated with data that may still be updating. A finalized version will replace it once all metrics have synced.
+          Este relatório foi gerado com dados que ainda podem ser atualizados. Uma versão final o substituirá assim que todas as métricas forem sincronizadas.
         </Banner>
       ) : null}
       {r.status === "failed" ? (
         <Banner tone="error" role="alert">
-          This week&apos;s report couldn&apos;t be generated in full.{r.errorMessage ? ` ${r.errorMessage}` : ""} {vm.content ? "The partial report is shown below." : ""} Contact support if this keeps happening.
+          Não foi possível gerar o relatório desta semana por completo.{r.errorMessage ? ` ${r.errorMessage}` : ""} {vm.content ? "O relatório parcial é exibido abaixo." : ""} Fale com o suporte se isso continuar acontecendo.
         </Banner>
       ) : null}
-      {r.status === "generating" ? <Banner tone="info">This version is still being generated. Refresh in a minute.</Banner> : null}
-      <p className="mb-4 text-xs text-ink-2">Narrative sections are in the brand&apos;s report language ({r.locale}). Buttons and navigation stay in English.</p>
+      {r.status === "generating" ? <Banner tone="info">Esta versão ainda está sendo gerada. Atualize a página em um minuto.</Banner> : null}
+      <p className="mb-4 text-xs text-ink-2">As seções narrativas estão no idioma de relatório da marca ({r.locale}).</p>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_16rem]">
-        <div className="min-w-0">{vm.content ? <ReportView content={vm.content} /> : <EmptyState title="No report content is available for this version." />}</div>
+        <div className="min-w-0">{vm.content ? <ReportView content={vm.content} /> : <EmptyState title="Nenhum conteúdo de relatório disponível para esta versão." />}</div>
         <aside aria-labelledby="versions" className="h-fit rounded-lg border border-line bg-surface p-4 text-sm">
           <h2 id="versions" className="mb-2 font-semibold">
-            Version history
+            Histórico de versões
           </h2>
           <ol className="space-y-2">
             {vm.versions.map((v) => (
@@ -102,7 +102,7 @@ export default async function ReportPage({ params }: { params: Promise<{ brandId
             ))}
           </ol>
           {vm.canRegenerate ? (
-            <ActionForm action={regenerateReportAction} hidden={{ brandId: vm.brand.id, periodStart: r.periodStart }} submitLabel="Regenerate this week" pendingLabel="Generating…" variant="secondary" className="mt-4" />
+            <ActionForm action={regenerateReportAction} hidden={{ brandId: vm.brand.id, periodStart: r.periodStart }} submitLabel="Gerar novamente esta semana" pendingLabel="Gerando…" variant="secondary" className="mt-4" />
           ) : null}
         </aside>
       </div>

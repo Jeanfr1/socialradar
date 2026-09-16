@@ -14,10 +14,11 @@ import { getDb } from "@/server/db/client";
 import { ALERT_SEVERITIES, ALERT_STATES, ALERT_TYPES, loadAlerts, type AlertFilters, type AlertsVM } from "@/server/queries/pages/alerts";
 import { oneOf, param, type SearchParams } from "@/server/queries/pages/guard";
 
-export const metadata: Metadata = { title: "Alerts" };
+export const metadata: Metadata = { title: "Alertas" };
 
-const STATE_LABEL: Record<string, string> = { active: "All unresolved", open: "Open", acknowledged: "Acknowledged", snoozed: "Snoozed", resolved: "Resolved (30 days)" };
-const TYPE_LABEL: Record<string, string> = { all: "All types", scheduling: "Scheduling", publishing: "Publishing", sync: "Sync" };
+const STATE_LABEL: Record<string, string> = { active: "Todos não resolvidos", open: "Em aberto", acknowledged: "Reconhecidos", snoozed: "Adiados", resolved: "Resolvidos (30 dias)" };
+const STATE_BADGE_LABEL: Record<string, string> = { active: "Ativo", open: "Em aberto", acknowledged: "Reconhecido", snoozed: "Adiado", resolved: "Resolvido" };
+const TYPE_LABEL: Record<string, string> = { all: "Todos os tipos", scheduling: "Agendamento", publishing: "Publicação", sync: "Sincronização" };
 
 function hrefWith(filters: AlertFilters, patch: Partial<AlertFilters>) {
   const f = { ...filters, ...patch };
@@ -49,11 +50,11 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
     if (err instanceof NotFoundError || err instanceof ForbiddenError) notFound();
     return (
       <>
-        <PageHeader title="Alerts" />
+        <PageHeader title="Alertas" />
         <Banner tone="error" role="alert">
-          We couldn&apos;t load alerts.{" "}
+          Não foi possível carregar os alertas.{" "}
           <Link href={hrefWith(filters, {})} className="link font-medium" prefetch={false}>
-            Retry
+            Tentar novamente
           </Link>
         </Banner>
       </>
@@ -61,25 +62,25 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
   }
 
   const tabs = [
-    { key: "critical" as const, label: "Critical", n: vm.counts.critical },
-    { key: "warning" as const, label: "Warning", n: vm.counts.warning },
-    { key: "info" as const, label: "Info", n: vm.counts.info },
-    { key: "all" as const, label: "All", n: vm.counts.all },
+    { key: "critical" as const, label: "Críticos", n: vm.counts.critical },
+    { key: "warning" as const, label: "Atenção", n: vm.counts.warning },
+    { key: "info" as const, label: "Informativos", n: vm.counts.info },
+    { key: "all" as const, label: "Todos", n: vm.counts.all },
   ];
 
   return (
     <>
       <PageHeader
-        title="Alerts"
-        subtitle={`Deduplicated issues across ${vm.isWorkspaceAdmin ? "your brands and Buffer connections" : "your brands"}. The same condition updates in place instead of creating duplicates.`}
+        title="Alertas"
+        subtitle={`Problemas deduplicados em ${vm.isWorkspaceAdmin ? "suas marcas e conexões com o Buffer" : "suas marcas"}. A mesma condição é atualizada no lugar, em vez de gerar duplicatas.`}
       />
-      {vm.hasDemo ? <DemoBanner scope="Alerts marked Demo come from the demo brand's fixture data." /> : null}
+      {vm.hasDemo ? <DemoBanner scope="Alertas sinalizados como Demo vêm dos dados fictícios da marca de demonstração." /> : null}
       {vm.staleNote ? <Banner tone="stale">{vm.staleNote}</Banner> : null}
       {!vm.anyManageable && vm.items.length > 0 ? (
-        <Banner tone="info">You have view-only access to these alerts. Managers and owners can acknowledge, snooze or resolve them.</Banner>
+        <Banner tone="info">Você tem acesso somente leitura a estes alertas. Gerentes e proprietários podem reconhecer, adiar ou resolver.</Banner>
       ) : null}
 
-      <nav aria-label="Severity" className="mb-3 overflow-x-auto border-b border-line">
+      <nav aria-label="Severidade" className="mb-3 overflow-x-auto border-b border-line">
         <ul className="flex min-w-max gap-1">
           {tabs.map((t) => (
             <li key={t.key}>
@@ -96,14 +97,14 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         </ul>
       </nav>
 
-      <form method="get" action="/alerts" className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-line bg-surface p-3" aria-label="Alert filters">
+      <form method="get" action="/alerts" className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-line bg-surface p-3" aria-label="Filtros de alertas">
         {vm.filters.severity !== "all" ? <input type="hidden" name="severity" value={vm.filters.severity} /> : null}
         <div>
           <label htmlFor="a-brand" className="label text-xs">
-            Brand
+            Marca
           </label>
           <select id="a-brand" name="brand" defaultValue={vm.filters.brand ?? ""} className="input">
-            <option value="">All brands{vm.isWorkspaceAdmin ? " + connections" : ""}</option>
+            <option value="">Todas as marcas{vm.isWorkspaceAdmin ? " + conexões" : ""}</option>
             {vm.options.brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -114,10 +115,10 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         </div>
         <div>
           <label htmlFor="a-account" className="label text-xs">
-            Account
+            Conta
           </label>
           <select id="a-account" name="account" defaultValue={vm.filters.account ?? ""} className="input">
-            <option value="">All accounts</option>
+            <option value="">Todas as contas</option>
             {vm.options.accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.label}
@@ -139,7 +140,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         </div>
         <div>
           <label htmlFor="a-type" className="label text-xs">
-            Type
+            Tipo
           </label>
           <select id="a-type" name="type" defaultValue={vm.filters.type} className="input">
             {ALERT_TYPES.map((t) => (
@@ -150,18 +151,18 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
           </select>
         </div>
         <button type="submit" className="btn btn-primary">
-          Apply
+          Aplicar
         </button>
         <Link href="/alerts" className="btn btn-secondary">
-          Reset
+          Limpar
         </Link>
       </form>
 
       {vm.items.length === 0 ? (
         vm.filters.state === "active" || vm.filters.state === "open" ? (
-          <EmptyState title="No open alerts.">Everything is within your configured thresholds.</EmptyState>
+          <EmptyState title="Nenhum alerta em aberto.">Tudo está dentro dos limites configurados.</EmptyState>
         ) : (
-          <EmptyState title="No alerts match these filters." />
+          <EmptyState title="Nenhum alerta corresponde a estes filtros." />
         )
       ) : (
         <ul className="space-y-3">
@@ -171,7 +172,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                 <div className="flex flex-wrap items-center gap-2">
                   <SeverityBadge severity={a.severity} />
                   <Pill>{a.typeLabel}</Pill>
-                  <Pill tone={a.state === "open" ? "accent" : "neutral"}>{a.state[0]!.toUpperCase() + a.state.slice(1)}</Pill>
+                  <Pill tone={a.state === "open" ? "accent" : "neutral"}>{STATE_BADGE_LABEL[a.state] ?? a.state}</Pill>
                   {a.isDemo ? <DemoBadge /> : null}
                   <span className="text-xs text-ink-2">{a.updatedRelative}</span>
                 </div>
@@ -198,21 +199,21 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                   </dl>
                 ) : null}
                 <p className="mt-2 text-sm">
-                  <span className="font-medium">Suggested action: </span>
+                  <span className="font-medium">Ação sugerida: </span>
                   {a.suggestedAction}
                 </p>
                 <p className="mt-2 flex flex-wrap gap-x-3 text-xs text-ink-2">
-                  <span>First detected {a.firstDetected}</span>
-                  <span>Last detected {a.lastDetected}</span>
+                  <span>Detectado pela primeira vez em {a.firstDetected}</span>
+                  <span>Detectado pela última vez em {a.lastDetected}</span>
                   <span>
-                    {a.occurrenceCount > 1 ? `Changed ${a.occurrenceCount - 1} ${a.occurrenceCount === 2 ? "time" : "times"} · ` : ""}
+                    {a.occurrenceCount > 1 ? `Mudou ${a.occurrenceCount - 1} ${a.occurrenceCount === 2 ? "vez" : "vezes"} · ` : ""}
                     {a.ongoingSince}
                   </span>
                   {a.stateLine ? <span>{a.stateLine}</span> : null}
                   {a.snoozedUntil ? (
                     <span className="inline-flex items-center">
-                      Snoozed until {a.snoozedUntil}
-                      <InfoTip label="About snoozing">{DEFINITIONS.snoozed}</InfoTip>
+                      Adiado até {a.snoozedUntil}
+                      <InfoTip label="Sobre adiamento">{DEFINITIONS.snoozed}</InfoTip>
                     </span>
                   ) : null}
                 </p>
@@ -222,7 +223,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
           ))}
         </ul>
       )}
-      {vm.truncated ? <p className="mt-3 text-sm text-ink-2">Showing the first 300 alerts. Narrow the filters to see more.</p> : null}
+      {vm.truncated ? <p className="mt-3 text-sm text-ink-2">Exibindo os primeiros 300 alertas. Restrinja os filtros para ver mais.</p> : null}
     </>
   );
 }

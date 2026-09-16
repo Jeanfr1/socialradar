@@ -23,7 +23,7 @@ export async function exportReport(
   try {
     user = await requireUser("action");
   } catch {
-    return text(401, "Please sign in to continue.");
+    return text(401, "Entre na sua conta para continuar.");
   }
   try {
     const { filename, body } = await render(getDb(), user, reportId);
@@ -33,10 +33,10 @@ export async function exportReport(
       headers: { ...BASE_HEADERS, "Content-Type": contentType, "Content-Disposition": contentDisposition(filename) },
     });
   } catch (err) {
-    if (err instanceof NotFoundError || err instanceof ForbiddenError) return text(404, "Not found.");
-    if (err instanceof AuthError) return text(401, "Please sign in to continue.");
+    if (err instanceof NotFoundError || err instanceof ForbiddenError) return text(404, "Não encontrado.");
+    if (err instanceof AuthError) return text(401, "Entre na sua conta para continuar.");
     if (err instanceof ConflictError) return text(409, err.message);
     logger.error("report export failed", { err, reportId });
-    return text(500, "We couldn't export this report. Try again.");
+    return text(500, "Não foi possível exportar este relatório. Tente novamente.");
   }
 }

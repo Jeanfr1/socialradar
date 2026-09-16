@@ -60,8 +60,8 @@ describe("evaluateAccountAlerts — queue coverage", () => {
       dedupeKey: "queue_coverage:acc1",
       brandId: "brand1",
       socialAccountId: "acc1",
-      title: "No posts scheduled for @brand_tiktok (TikTok)",
-      suggestedAction: "Schedule 7 posts before Mon 14 Sep 20:00 (America/Sao_Paulo) to cover the next 7 days.",
+      title: "Nenhum post agendado em @brand_tiktok (TikTok)",
+      suggestedAction: "Agende 7 posts até seg. 14 set. 20:00 (America/Sao_Paulo) para cobrir os próximos 7 dias.",
     });
     expect(alert!.evidence).toMatchObject({ scheduledCount: 0, postsNeeded: 7, firstUncoveredSlot: "2026-09-14T23:00:00.000Z" });
   });
@@ -70,8 +70,8 @@ describe("evaluateAccountAlerts — queue coverage", () => {
     const warning = evaluateAccountAlerts(account({ coverage: coverage([0, 1, 2, 3].map((d) => ({ id: `p${d}`, dueAt: slot(d), status: "scheduled" as const }))) }));
     const critical = evaluateAccountAlerts(account({ coverage: coverage([{ id: "p0", dueAt: slot(0), status: "scheduled" }]) }));
     const empty = evaluateAccountAlerts(account());
-    expect(warning[0]).toMatchObject({ type: "queue_coverage", severity: "warning", title: "Queue for @brand_tiktok (TikTok) covers only 4.5 days" });
-    expect(warning[0]!.suggestedAction).toBe("Schedule 3 posts before Fri 18 Sep 20:00 (America/Sao_Paulo) to cover the next 7 days.");
+    expect(warning[0]).toMatchObject({ type: "queue_coverage", severity: "warning", title: "A fila de @brand_tiktok (TikTok) cobre apenas 4.5 dias" });
+    expect(warning[0]!.suggestedAction).toBe("Agende 3 posts até sex. 18 set. 20:00 (America/Sao_Paulo) para cobrir os próximos 7 dias.");
     expect(critical[0]).toMatchObject({ type: "queue_coverage", severity: "critical" });
     expect(new Set([warning[0]!.dedupeKey, critical[0]!.dedupeKey, empty[0]!.dedupeKey])).toEqual(new Set(["queue_coverage:acc1"]));
   });
@@ -81,8 +81,8 @@ describe("evaluateAccountAlerts — queue coverage", () => {
     const cov = computeCoverage({ now: NOW, cadence: cadence({ horizonDays: 5 }), items, lastQueueSyncAt: NOW, queuePaused: false, accountDisconnected: false });
     const [alert] = evaluateAccountAlerts(account({ coverage: cov }));
     expect(alert!.severity).toBe("warning");
-    expect(alert!.suggestedAction).not.toMatch(/Schedule 0/);
-    expect(alert!.suggestedAction).toContain("Extend the horizon");
+    expect(alert!.suggestedAction).not.toMatch(/Agende 0/);
+    expect(alert!.suggestedAction).toContain("Aumente o horizonte");
   });
 
   it("healthy fresh account produces no alerts", () => {
@@ -99,7 +99,7 @@ describe("evaluateAccountAlerts — queue coverage", () => {
     const [alert] = evaluateAccountAlerts(account({ coverage: cov, inventoryCap: 10 }));
     expect(alert!.severity).toBe("critical");
     expect(alert!.suggestedAction).toBe(
-      "Schedule 6 posts before Wed 16 Sep 18:28 (America/Sao_Paulo) (the provider limit of 10 scheduled posts prevents covering all 14 days), then top up the queue as posts publish.",
+      "Agende 6 posts até qua. 16 set. 18:28 (America/Sao_Paulo) (o limite de 10 posts agendados do provedor impede cobrir todos os 14 dias) e reabasteça a fila conforme os posts forem publicados.",
     );
 
     const full = computeCoverage(
@@ -107,7 +107,7 @@ describe("evaluateAccountAlerts — queue coverage", () => {
       { inventoryCap: 10 },
     );
     const [capped] = evaluateAccountAlerts(account({ coverage: full }));
-    expect(capped!.suggestedAction).toMatch(/^The provider's scheduled-post limit \(10\) is reached/);
+    expect(capped!.suggestedAction).toMatch(/^O limite de posts agendados do provedor \(10\) foi atingido/);
   });
 });
 
@@ -153,7 +153,7 @@ describe("evaluateAccountAlerts — freshness and account state suppress queue a
     expect(types(alerts)).toEqual(["queue_empty", "unresolved_times"]);
     expect(alerts.find((a) => a.type === "unresolved_times")).toMatchObject({
       severity: "info",
-      title: "2 pending posts for @brand_tiktok (TikTok) have no confirmed publish time",
+      title: "2 posts pendentes de @brand_tiktok (TikTok) sem horário de publicação confirmado",
     });
   });
 });
@@ -176,7 +176,7 @@ describe("evaluateAccountAlerts — publishing problems", () => {
     expect(alerts[0]!.severity).toBe("critical");
     expect(alerts[1]!.severity).toBe("warning");
     expect((alerts[0]!.evidence.providerMessage as string).length).toBe(500);
-    expect(alerts[1]!.suggestedAction).toContain("Fri 11 Sep 09:00 (America/Sao_Paulo)");
+    expect(alerts[1]!.suggestedAction).toContain("sex. 11 set. 09:00 (America/Sao_Paulo)");
   });
 
   it("post_overdue aggregates per account and excludes posts already reported as failed", () => {
@@ -192,13 +192,13 @@ describe("evaluateAccountAlerts — publishing problems", () => {
       }),
     );
     const overdue = alerts.find((a) => a.type === "post_overdue")!;
-    expect(overdue).toMatchObject({ dedupeKey: "post_overdue:acc1", severity: "warning", title: "2 scheduled posts overdue on @brand_tiktok (TikTok)" });
+    expect(overdue).toMatchObject({ dedupeKey: "post_overdue:acc1", severity: "warning", title: "2 posts agendados atrasados em @brand_tiktok (TikTok)" });
     expect(overdue.evidence).toMatchObject({ postIds: ["o1", "o2"], oldestDueAt: "2026-09-14T10:00:00.000Z", likelyCause: null });
   });
 
   it("accepts a custom date formatter", () => {
     const [alert] = evaluateAccountAlerts(account({ formatDate: (d) => d.toISOString() }));
-    expect(alert!.suggestedAction).toBe("Schedule 7 posts before 2026-09-14T23:00:00.000Z to cover the next 7 days.");
+    expect(alert!.suggestedAction).toBe("Agende 7 posts até 2026-09-14T23:00:00.000Z para cobrir os próximos 7 dias.");
   });
 });
 
@@ -233,14 +233,14 @@ describe("evaluateConnectionAlerts", () => {
     expect(six).toHaveLength(1);
     expect(six[0]!.severity).toBe("critical");
     const throttled = evaluateConnectionAlerts({ ...base, consecutiveFailures: 8, lastErrorCode: "rate_limited" });
-    expect(throttled[0]).toMatchObject({ severity: "warning", title: "Buffer sync throttled 8 times in a row" });
+    expect(throttled[0]).toMatchObject({ severity: "warning", title: "Sincronização do Buffer limitada 8 vezes seguidas" });
   });
 
   it("stale connection without failures → sync_stale scoped to the connection", () => {
     const warn = evaluateConnectionAlerts({ ...base, lastSyncSuccessAt: new Date(NOW.getTime() - 7 * 3_600_000) });
     expect(warn[0]).toMatchObject({ type: "sync_stale", severity: "warning", dedupeKey: "sync_stale:connection:c1" });
     expect(evaluateConnectionAlerts({ ...base, lastSyncSuccessAt: new Date(NOW.getTime() - 25 * 3_600_000) })[0]!.severity).toBe("critical");
-    expect(evaluateConnectionAlerts({ ...base, lastSyncSuccessAt: null })[0]!.title).toBe("Buffer connection has never synced successfully");
+    expect(evaluateConnectionAlerts({ ...base, lastSyncSuccessAt: null })[0]!.title).toBe("A conexão com o Buffer nunca sincronizou com sucesso");
   });
 });
 

@@ -12,20 +12,20 @@ import { requireUser } from "@/server/auth/authz";
 import { getDb } from "@/server/db/client";
 import { loadPortfolio, type BrandCardVM, type SeverityCounts } from "@/server/queries/pages/portfolio";
 
-export const metadata: Metadata = { title: "Portfolio" };
+export const metadata: Metadata = { title: "Portfólio" };
 
 function AlertCounts({ counts, label }: { counts: SeverityCounts; label: string }) {
   return (
-    <Link href="/alerts" className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface px-3 py-2 hover:border-accent" aria-label={`${label}: ${counts.critical} critical, ${counts.warning} warning, ${counts.info} info open alerts`}>
+    <Link href="/alerts" className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface px-3 py-2 hover:border-accent" aria-label={`${label}: ${counts.critical} alertas críticos, ${counts.warning} de atenção e ${counts.info} informativos em aberto`}>
       <span className="text-xs font-medium text-ink-2">{label}</span>
       <Pill tone="critical">
-        <Icon name="alert-octagon" className="h-3 w-3" /> {counts.critical} Critical
+        <Icon name="alert-octagon" className="h-3 w-3" /> {counts.critical} Críticos
       </Pill>
       <Pill tone="warning">
-        <Icon name="alert-triangle" className="h-3 w-3" /> {counts.warning} Warning
+        <Icon name="alert-triangle" className="h-3 w-3" /> {counts.warning} Atenção
       </Pill>
       <Pill tone="accent">
-        <Icon name="info" className="h-3 w-3" /> {counts.info} Info
+        <Icon name="info" className="h-3 w-3" /> {counts.info} Informativos
       </Pill>
     </Link>
   );
@@ -50,13 +50,13 @@ function BrandCard({ card }: { card: BrandCardVM }) {
             {card.isDemo ? <DemoBadge /> : null}
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-1">
-            {card.worst ? <StatusBadge status={card.worst} stale={card.stale} /> : <Pill>No accounts mapped</Pill>}
+            {card.worst ? <StatusBadge status={card.worst} stale={card.stale} /> : <Pill>Nenhuma conta mapeada</Pill>}
             {card.connectionUnavailable ? (
               <span className="inline-flex items-center gap-0.5">
-                <Pill tone="critical">Connection unavailable</Pill>
-                <InfoTip label="About Connection unavailable">
-                  We can&apos;t reach Buffer for this brand&apos;s accounts right now. This is not the same as no scheduled posts — we simply
-                  can&apos;t confirm status.
+                <Pill tone="critical">Conexão indisponível</Pill>
+                <InfoTip label="Sobre Conexão indisponível">
+                  Não conseguimos acessar o Buffer para as contas desta marca agora. Isso não é o mesmo que não haver posts agendados — apenas
+                  não conseguimos confirmar o status.
                 </InfoTip>
               </span>
             ) : null}
@@ -74,33 +74,33 @@ function BrandCard({ card }: { card: BrandCardVM }) {
       ) : null}
       <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <div>
-          <dt className="text-xs text-ink-2">Accounts</dt>
+          <dt className="text-xs text-ink-2">Contas</dt>
           <dd className="mt-0.5 flex flex-wrap gap-1">
-            {card.platforms.length === 0 ? <span className="text-ink-2">None</span> : null}
+            {card.platforms.length === 0 ? <span className="text-ink-2">Nenhuma</span> : null}
             {card.platforms.map((p) => (
               <span key={p.platform} className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 text-xs">
                 {p.label} ×{p.count}
-                <span className="sr-only">worst status {p.worst}</span>
+                <span className="sr-only">pior status {p.worst}</span>
                 <StatusDot status={p.worst} />
               </span>
             ))}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-ink-2">Open alerts</dt>
+          <dt className="text-xs text-ink-2">Alertas em aberto</dt>
           <dd className="mt-0.5 tabular-nums">
-            {card.openAlerts.critical} critical · {card.openAlerts.warning} warning
+            {card.openAlerts.critical} críticos · {card.openAlerts.warning} de atenção
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-ink-2">Posts published (7d)</dt>
+          <dt className="text-xs text-ink-2">Posts publicados (7d)</dt>
           <dd className="mt-0.5 tabular-nums">{card.postsLast7d ?? "N/A"}</dd>
         </div>
       </dl>
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
-        <Freshness vm={card.freshness} prefix={card.accountCount > 1 ? "Oldest account:" : undefined} />
+        <Freshness vm={card.freshness} prefix={card.accountCount > 1 ? "Conta mais antiga:" : undefined} />
         <Link href={`/brands/${card.id}`} className="btn btn-secondary">
-          View brand
+          Ver marca
         </Link>
       </div>
     </article>
@@ -130,51 +130,51 @@ export default async function PortfolioPage() {
   } catch {
     return (
       <>
-        <PageHeader title="Portfolio" />
-        <ErrorBanner message="We couldn't load your portfolio." retryHref="/portfolio" />
+        <PageHeader title="Portfólio" />
+        <ErrorBanner message="Não foi possível carregar seu portfólio." retryHref="/portfolio" />
       </>
     );
   }
 
   return (
     <>
-      <PageHeader title="Portfolio" subtitle="What needs attention across every brand you can access. Operational health and content performance are shown separately." />
-      {vm.totals.demo ? <DemoBanner scope="Brands marked Demo show fixture data. They are counted separately from the production totals below." /> : null}
+      <PageHeader title="Portfólio" subtitle="O que precisa de atenção em todas as marcas às quais você tem acesso. Saúde operacional e desempenho de conteúdo aparecem separadamente." />
+      {vm.totals.demo ? <DemoBanner scope="Marcas sinalizadas como Demo exibem dados fictícios. Elas são contabilizadas separadamente dos totais de produção abaixo." /> : null}
 
       {vm.brands.length === 0 ? (
         vm.isWorkspaceAdmin ? (
           <EmptyState
-            title="No brands yet."
+            title="Nenhuma marca ainda."
             action={
               <Link href="/settings/brands" className="btn btn-primary">
-                Create your first brand
+                Criar primeira marca
               </Link>
             }
           >
-            Create your first brand to start monitoring.
+            Crie sua primeira marca para começar a monitorar.
           </EmptyState>
         ) : (
-          <EmptyState title="You have no brands assigned yet.">Contact your admin to get access.</EmptyState>
+          <EmptyState title="Você ainda não tem marcas atribuídas.">Fale com o administrador para obter acesso.</EmptyState>
         )
       ) : (
         <>
           {vm.attentionAccountCount > 0 ? (
             <Banner tone="warning">
-              <strong>{vm.attentionAccountCount === 1 ? "1 account needs" : `${vm.attentionAccountCount} accounts need`} attention</strong>{" "}
-              (critical, empty, disconnected, locked, stale or failing to sync).{" "}
+              <strong>{vm.attentionAccountCount === 1 ? "1 conta precisa" : `${vm.attentionAccountCount} contas precisam`} de atenção</strong>{" "}
+              (crítica, vazia, desconectada, bloqueada, desatualizada ou com falha de sincronização).{" "}
               <Link href="/alerts" className="link">
-                Go to Alerts
+                Ir para Alertas
               </Link>
             </Banner>
           ) : null}
 
-          <section aria-label="Open alerts summary" className="mb-5 flex flex-wrap gap-2">
-            <AlertCounts counts={vm.totals.production.alerts} label={`Production · ${vm.totals.production.brands} brands, ${vm.totals.production.accounts} accounts`} />
-            {vm.totals.demo ? <AlertCounts counts={vm.totals.demo.alerts} label={`Demo · ${vm.totals.demo.brands} brands, ${vm.totals.demo.accounts} accounts`} /> : null}
-            {vm.connectionAlerts ? <AlertCounts counts={vm.connectionAlerts} label="Connections (admin)" /> : null}
+          <section aria-label="Resumo de alertas em aberto" className="mb-5 flex flex-wrap gap-2">
+            <AlertCounts counts={vm.totals.production.alerts} label={`Produção · ${vm.totals.production.brands} marcas, ${vm.totals.production.accounts} contas`} />
+            {vm.totals.demo ? <AlertCounts counts={vm.totals.demo.alerts} label={`Demo · ${vm.totals.demo.brands} marcas, ${vm.totals.demo.accounts} contas`} /> : null}
+            {vm.connectionAlerts ? <AlertCounts counts={vm.connectionAlerts} label="Conexões (admin)" /> : null}
           </section>
 
-          <h2 className="sr-only">Brands</h2>
+          <h2 className="sr-only">Marcas</h2>
           <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {vm.brands.map((b) => (
               <BrandCard key={b.id} card={b} />
@@ -183,24 +183,24 @@ export default async function PortfolioPage() {
 
           <div className="grid gap-4 xl:grid-cols-2">
             <Card labelledBy="running-out">
-              <CardTitle id="running-out">Accounts closest to running out</CardTitle>
+              <CardTitle id="running-out">Contas mais próximas de ficar sem conteúdo</CardTitle>
               {vm.runningOut.length === 0 ? (
-                <p className="text-ink-2">No accounts with an active posting cadence to rank.</p>
+                <p className="text-ink-2">Nenhuma conta com cadência de publicação ativa para classificar.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="data-table w-full text-sm">
-                    <caption className="sr-only">Accounts sorted by continuous covered days, lowest first</caption>
+                    <caption className="sr-only">Contas ordenadas por dias cobertos contínuos, do menor para o maior</caption>
                     <thead>
                       <tr>
-                        <th scope="col">Account</th>
+                        <th scope="col">Conta</th>
                         <th scope="col">Status</th>
                         <th scope="col">
                           <span className="inline-flex items-center">
-                            Covered
-                            <InfoTip label="About Coverage">{DEFINITIONS.coverage}</InfoTip>
+                            Cobertos
+                            <InfoTip label="Sobre Cobertura">{DEFINITIONS.coverage}</InfoTip>
                           </span>
                         </th>
-                        <th scope="col">First gap</th>
+                        <th scope="col">Primeira lacuna</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -220,10 +220,10 @@ export default async function PortfolioPage() {
                           <td className="tabular-nums">
                             {h.scheduling.coveredDays ?? "N/A"}
                             <div className="text-xs text-ink-2">
-                              {h.scheduling.coveragePct ?? "N/A"} of slots
+                              {h.scheduling.coveragePct ?? "N/A"} dos horários
                             </div>
                           </td>
-                          <td className="text-xs">{h.scheduling.firstUncoveredSlot ?? "No gap in horizon"}</td>
+                          <td className="text-xs">{h.scheduling.firstUncoveredSlot ?? "Sem lacuna no horizonte"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -233,14 +233,14 @@ export default async function PortfolioPage() {
             </Card>
 
             <Card labelledBy="perf-changes">
-              <CardTitle id="perf-changes">Notable performance changes</CardTitle>
+              <CardTitle id="perf-changes">Mudanças relevantes de desempenho</CardTitle>
               <p className="mb-3 text-xs text-ink-2">
-                Median engagement rate per post, last complete week vs the week before (brand timezone). Only valid comparisons are shown:
-                same definition, complete weeks, at least 3 posts each and comparable post ages. Engagement rates are never compared across
-                platforms.
+                Taxa de engajamento mediana por post, última semana completa vs. a semana anterior (fuso horário da marca). Só aparecem
+                comparações válidas: mesma definição, semanas completas, pelo menos 3 posts em cada e posts com idades comparáveis. Taxas de
+                engajamento nunca são comparadas entre plataformas.
               </p>
               {vm.sectionErrors.changes ? <ErrorBanner message={vm.sectionErrors.changes} retryHref="/portfolio" /> : null}
-              {vm.changes && vm.changes.valid.length === 0 ? <p className="text-ink-2">No valid week-over-week comparisons this week.</p> : null}
+              {vm.changes && vm.changes.valid.length === 0 ? <p className="text-ink-2">Nenhuma comparação válida entre semanas nesta semana.</p> : null}
               {vm.changes && vm.changes.valid.length > 0 ? (
                 <ul className="divide-y divide-line">
                   {vm.changes.valid.map((c) => (
@@ -255,7 +255,7 @@ export default async function PortfolioPage() {
                         </span>
                       </div>
                       <p className="text-xs text-ink-2">
-                        {c.metricLabel}: {c.previous} → {c.current} · {c.sample} · definition <code>{c.definitionId}</code> {c.isDemo ? <DemoBadge /> : null}
+                        {c.metricLabel}: {c.previous} → {c.current} · {c.sample} · definição <code>{c.definitionId}</code> {c.isDemo ? <DemoBadge /> : null}
                       </p>
                     </li>
                   ))}
@@ -263,7 +263,7 @@ export default async function PortfolioPage() {
               ) : null}
               {vm.changes && vm.changes.unavailable.length > 0 ? (
                 <details className="mt-3 text-sm">
-                  <summary className="link cursor-pointer">Comparisons not available ({vm.changes.unavailable.length})</summary>
+                  <summary className="link cursor-pointer">Comparações não disponíveis ({vm.changes.unavailable.length})</summary>
                   <ul className="mt-2 space-y-1 text-ink-2">
                     {vm.changes.unavailable.map((c) => (
                       <li key={c.accountId}>
@@ -281,15 +281,15 @@ export default async function PortfolioPage() {
                   id="conn-failures"
                   actions={
                     <Link href="/settings/connections" className="link text-sm">
-                      Manage connections
+                      Gerenciar conexões
                     </Link>
                   }
                 >
-                  Connection failures
+                  Falhas de conexão
                 </CardTitle>
                 {vm.sectionErrors.connections ? <ErrorBanner message={vm.sectionErrors.connections} retryHref="/portfolio" /> : null}
                 {vm.connectionFailures.length === 0 ? (
-                  <p className="text-ink-2">All Buffer connections are active with no recent failures.</p>
+                  <p className="text-ink-2">Todas as conexões com o Buffer estão ativas, sem falhas recentes.</p>
                 ) : (
                   <ul className="divide-y divide-line">
                     {vm.connectionFailures.map((c) => (
@@ -298,9 +298,9 @@ export default async function PortfolioPage() {
                           <span className="font-medium">{c.label}</span>
                           <Pill tone={c.status === "active" ? "warning" : "critical"}>{c.status}</Pill>
                           {c.keyHint ? <code className="text-xs text-ink-2">{c.keyHint}</code> : null}
-                          <span className="text-xs text-ink-2">{c.failures} consecutive failures · last success {c.lastSuccess}</span>
+                          <span className="text-xs text-ink-2">{c.failures} falhas consecutivas · último sucesso {c.lastSuccess}</span>
                         </div>
-                        {c.lastError ? <p className="mt-0.5 break-words text-xs text-ink-2">Last error: {c.lastError}</p> : null}
+                        {c.lastError ? <p className="mt-0.5 break-words text-xs text-ink-2">Último erro: {c.lastError}</p> : null}
                       </li>
                     ))}
                   </ul>

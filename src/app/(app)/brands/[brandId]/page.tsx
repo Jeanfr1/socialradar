@@ -16,7 +16,7 @@ import type { Platform } from "@/domain/types";
 import { loadBrandDashboard } from "@/server/queries/pages/brand-dashboard";
 import { oneOf, orNotFound, param, type SearchParams } from "@/server/queries/pages/guard";
 
-export const metadata: Metadata = { title: "Brand dashboard" };
+export const metadata: Metadata = { title: "Painel da marca" };
 
 const PLATFORMS = ["all", "instagram", "tiktok", "youtube"] as const;
 
@@ -32,27 +32,27 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
 
   return (
     <>
-      <h1 className="sr-only">{vm.brand.name} dashboard</h1>
+      <h1 className="sr-only">Painel de {vm.brand.name}</h1>
       {vm.staleData ? (
         <Banner tone="stale">
-          Some data here is more than 24h old or older than its staleness window.{" "}
+          Alguns dados aqui têm mais de 24h ou são mais antigos que a janela de atualização definida.{" "}
           <a href="#scheduling-details" className="link">
-            See sync details
+            Ver detalhes da sincronização
           </a>
         </Banner>
       ) : null}
 
       {vm.accounts.length === 0 ? (
-        <EmptyState title="No accounts are mapped to this brand yet.">
-          A workspace administrator can map discovered Buffer channels to this brand in Settings → Connections. Unmapped channels never
-          appear in brand metrics.
+        <EmptyState title="Nenhuma conta está mapeada para esta marca ainda.">
+          Um administrador do workspace pode mapear os canais do Buffer descobertos para esta marca em Configurações → Conexões. Canais não
+          mapeados nunca aparecem nas métricas da marca.
         </EmptyState>
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">
           <Card labelledBy="ops-health">
-            <CardTitle id="ops-health">Operational health</CardTitle>
-            <p className="mb-3 text-xs text-ink-2">Scheduling and publishing only. Never blended with content performance.</p>
-            {!vm.hasAnyPosts ? <p className="mb-3 rounded-md border border-line bg-canvas p-2 text-sm">No scheduled or sent posts found for this brand yet.</p> : null}
+            <CardTitle id="ops-health">Saúde operacional</CardTitle>
+            <p className="mb-3 text-xs text-ink-2">Apenas agendamento e publicação. Nunca misturado com desempenho de conteúdo.</p>
+            {!vm.hasAnyPosts ? <p className="mb-3 rounded-md border border-line bg-canvas p-2 text-sm">Nenhum post agendado ou enviado foi encontrado para esta marca ainda.</p> : null}
             <ul className="divide-y divide-line">
               {vm.accounts.map((a) => (
                 <li key={a.accountId} className="py-3">
@@ -69,17 +69,17 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
                   <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                     <div className="flex flex-wrap items-center gap-1">
                       <dt className="text-ink-2">
-                        <Term term="Coverage" definition={DEFINITIONS.coverage} />:
+                        <Term term="Cobertura" definition={DEFINITIONS.coverage} />:
                       </dt>
                       <dd className="tabular-nums">
-                        {a.scheduling.unavailable ?? (a.scheduling.coveragePct ? `${a.scheduling.coveragePct} · ${a.scheduling.coveredDays ?? "0 days"} continuous` : "No expected slots")}
+                        {a.scheduling.unavailable ?? (a.scheduling.coveragePct ? `${a.scheduling.coveragePct} · ${a.scheduling.coveredDays ?? "0 dias"} contínuos` : "Sem horários previstos")}
                       </dd>
                     </div>
                     <div className="flex flex-wrap items-center gap-1">
                       <dt className="text-ink-2">
-                        <Term term="First uncovered slot" definition={DEFINITIONS.firstUncovered} />:
+                        <Term term="Primeiro horário descoberto" definition={DEFINITIONS.firstUncovered} />:
                       </dt>
-                      <dd>{a.scheduling.unavailable ?? a.scheduling.firstUncoveredSlot ?? "None in horizon"}</dd>
+                      <dd>{a.scheduling.unavailable ?? a.scheduling.firstUncoveredSlot ?? "Nenhum no horizonte"}</dd>
                     </div>
                   </dl>
                   {a.needsLine ? <p className="mt-1 text-sm font-medium text-ink">{a.needsLine}</p> : null}
@@ -95,43 +95,43 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
             <CardTitle
               id="content-perf"
               actions={
-                <div className="flex flex-wrap gap-1" role="group" aria-label="Performance period">
+                <div className="flex flex-wrap gap-1" role="group" aria-label="Período de desempenho">
                   {(["7d", "28d"] as const).map((r) => (
                     <Link key={r} href={href({ range: r })} aria-current={r === range ? "true" : undefined} className={`btn ${r === range ? "btn-primary" : "btn-secondary"} min-h-9 px-3`}>
-                      {r === "7d" ? "Last 7 days" : "Last 28 days"}
+                      {r === "7d" ? "Últimos 7 dias" : "Últimos 28 dias"}
                     </Link>
                   ))}
                 </div>
               }
             >
-              Content performance
+              Desempenho de conteúdo
             </CardTitle>
-            <nav aria-label="Platform filter" className="mb-3 flex flex-wrap gap-1 text-sm">
+            <nav aria-label="Filtro de plataforma" className="mb-3 flex flex-wrap gap-1 text-sm">
               {PLATFORMS.map((p) => (
                 <Link key={p} href={href({ platform: p })} aria-current={p === platform ? "true" : undefined} className={`rounded-full border px-2.5 py-1 ${p === platform ? "border-accent bg-accent-soft font-semibold text-accent" : "border-line text-ink-2 hover:text-ink"}`}>
-                  {p === "all" ? "All platforms" : p === "instagram" ? "Instagram" : p === "tiktok" ? "TikTok" : "YouTube"}
+                  {p === "all" ? "Todas as plataformas" : p === "instagram" ? "Instagram" : p === "tiktok" ? "TikTok" : "YouTube"}
                 </Link>
               ))}
             </nav>
             {vm.performance.error ? <ErrorBanner message={vm.performance.error} retryHref={href({})} /> : null}
             {!vm.performance.error && vm.performance.platforms.every((p) => p.postsPublished === 0) ? (
-              <p className="rounded-md border border-line bg-canvas p-3 text-sm">No content data yet — once posts are published, performance will appear here.</p>
+              <p className="rounded-md border border-line bg-canvas p-3 text-sm">Ainda não há dados de conteúdo — assim que houver posts publicados, o desempenho aparecerá aqui.</p>
             ) : null}
             {vm.performance.platforms.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="data-table w-full text-sm">
-                  <caption className="sr-only">Top-line metrics per platform; lifetime values as of each post&apos;s last provider refresh</caption>
+                  <caption className="sr-only">Métricas principais por plataforma; valores acumulados até a última atualização do provedor para cada post</caption>
                   <thead>
                     <tr>
-                      <th scope="col">Platform</th>
+                      <th scope="col">Plataforma</th>
                       <th scope="col">Posts</th>
                       <th scope="col">Views</th>
-                      <th scope="col">Median reach</th>
+                      <th scope="col">Alcance mediano</th>
                       <th scope="col">
                         <span className="inline-flex items-center">
-                          Median eng. rate
-                          <InfoTip label="About Engagement rate" align="right">
-                            {DEFINITIONS.erReach} {DEFINITIONS.erViews} Rates use different definitions per platform and are never compared across platforms.
+                          Taxa de eng. mediana
+                          <InfoTip label="Sobre Taxa de engajamento" align="right">
+                            {DEFINITIONS.erReach} {DEFINITIONS.erViews} As taxas usam definições diferentes por plataforma e nunca são comparadas entre plataformas.
                           </InfoTip>
                         </span>
                       </th>
@@ -142,26 +142,26 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
                       <tr key={p.platform}>
                         <th scope="row" className="font-medium">
                           {p.label}
-                          <div className="text-[11px] font-normal text-ink-2">{p.metricsAsOf ? `Metrics as of ${p.metricsAsOf}` : "No metrics yet"}</div>
+                          <div className="text-[11px] font-normal text-ink-2">{p.metricsAsOf ? `Métricas de ${p.metricsAsOf}` : "Sem métricas ainda"}</div>
                         </th>
                         <td className="tabular-nums">{p.postsPublished}</td>
                         <td className="tabular-nums">
                           <span className="inline-flex items-center">
                             {p.views.display}
-                            {p.views.note ? <InfoTip label={`About ${p.label} views`}>{p.views.note}</InfoTip> : null}
+                            {p.views.note ? <InfoTip label={`Sobre views no ${p.label}`}>{p.views.note}</InfoTip> : null}
                           </span>
                         </td>
                         <td className="tabular-nums">
                           <span className="inline-flex items-center">
                             <span className={p.medianReach.display === "Unsupported" ? "text-xs italic text-ink-2" : ""}>{p.medianReach.display}</span>
-                            {p.medianReach.note ? <InfoTip label={`About ${p.label} reach`}>{p.medianReach.note}</InfoTip> : null}
+                            {p.medianReach.note ? <InfoTip label={`Sobre alcance no ${p.label}`}>{p.medianReach.note}</InfoTip> : null}
                           </span>
                         </td>
                         <td className="tabular-nums">
                           <span className="inline-flex items-center">
                             {p.medianEr.display}
-                            <InfoTip label={`About ${p.label} engagement rate`} align="right">
-                              {p.medianEr.note} Definition id: {p.medianEr.definitionId}.
+                            <InfoTip label={`Sobre taxa de engajamento no ${p.label}`} align="right">
+                              {p.medianEr.note} Id da definição: {p.medianEr.definitionId}.
                             </InfoTip>
                           </span>
                         </td>
@@ -172,11 +172,11 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
               </div>
             ) : null}
             <h3 className="mb-2 mt-4 flex items-center text-sm font-semibold">
-              Top posts this period
-              {vm.performance.rankingMethod ? <InfoTip label="How posts are ranked">{vm.performance.rankingMethod}</InfoTip> : null}
+              Melhores posts do período
+              {vm.performance.rankingMethod ? <InfoTip label="Como os posts são classificados">{vm.performance.rankingMethod}</InfoTip> : null}
             </h3>
             {vm.performance.topPosts.length === 0 ? (
-              <p className="text-sm text-ink-2">{vm.performance.rankingNote ?? "No ranked posts in this period."}</p>
+              <p className="text-sm text-ink-2">{vm.performance.rankingNote ?? "Nenhum post classificado neste período."}</p>
             ) : (
               <ol className="space-y-2">
                 {vm.performance.topPosts.map((t, i) => (
@@ -189,13 +189,13 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
                     </div>
                     <p className="text-xs text-ink-2">
                       @{t.handle.replace(/^@/, "")} · {t.platformLabel} · {t.publishedAt} ·{" "}
-                      <span className="font-medium text-ink">{t.ratio}</span> · {t.confidence} confidence
+                      <span className="font-medium text-ink">{t.ratio}</span> · confiança {t.confidence}
                     </p>
                     <p className="mt-1 text-xs text-ink-2">{t.explanation}</p>
                     {t.externalUrl ? (
                       <a href={t.externalUrl} target="_blank" rel="noopener noreferrer" className="link mt-1 inline-flex items-center gap-1 text-xs">
-                        Open original post <Icon name="external" className="h-3 w-3" />
-                        <span className="sr-only">(opens in a new tab)</span>
+                        Abrir post original <Icon name="external" className="h-3 w-3" />
+                        <span className="sr-only">(abre em uma nova aba)</span>
                       </a>
                     ) : null}
                   </li>
@@ -204,17 +204,17 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
             )}
             <p className="mt-3">
               <Link href={`${base}/content`} className="link text-sm">
-                Full content performance
+                Desempenho de conteúdo completo
               </Link>
             </p>
           </Card>
 
           <Card labelledBy="this-week">
-            <CardTitle id="this-week">This week</CardTitle>
+            <CardTitle id="this-week">Esta semana</CardTitle>
             {vm.thisWeek ? (
               <>
                 <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-ink-2">
-                  Week {vm.thisWeek.periodLabel} <Pill tone={vm.thisWeek.status === "Final" ? "healthy" : "stale"}>{vm.thisWeek.status}</Pill> <Pill>{vm.thisWeek.locale.toUpperCase()}</Pill>
+                  Semana {vm.thisWeek.periodLabel} <Pill tone={vm.thisWeek.status === "Final" ? "healthy" : "stale"}>{vm.thisWeek.status}</Pill> <Pill>{vm.thisWeek.locale.toUpperCase()}</Pill>
                 </p>
                 <div lang={vm.thisWeek.locale} className="text-sm">
                   <p className="line-clamp-6 whitespace-pre-line">{vm.thisWeek.summary}</p>
@@ -228,16 +228,16 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
                 </div>
                 <p className="mt-2">
                   <Link href={`${base}/reports/${vm.thisWeek.reportId}`} className="link text-sm">
-                    Open full report
+                    Abrir relatório completo
                   </Link>
                 </p>
               </>
             ) : (
               <>
-                <p className="text-sm text-ink-2">No weekly report yet. Reports summarize publishing consistency, best content and prioritized actions.</p>
+                <p className="text-sm text-ink-2">Ainda não há relatório semanal. Os relatórios resumem a consistência de publicação, os melhores conteúdos e as ações prioritárias.</p>
                 <p className="mt-2">
                   <Link href={`${base}/reports`} className="link text-sm">
-                    Open weekly reports
+                    Abrir relatórios semanais
                   </Link>
                 </p>
               </>
@@ -249,14 +249,14 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
               id="brand-alerts"
               actions={
                 <Link href={`/alerts?brand=${vm.brand.id}`} className="link text-sm">
-                  All {vm.openAlertCount} open alerts
+                  Ver {vm.openAlertCount} alertas em aberto
                 </Link>
               }
             >
-              Alerts
+              Alertas
             </CardTitle>
             {vm.alerts.length === 0 ? (
-              <p className="text-sm text-ink-2">No open alerts. Everything is within your configured thresholds.</p>
+              <p className="text-sm text-ink-2">Nenhum alerta em aberto. Tudo está dentro dos limites configurados.</p>
             ) : (
               <ul className="space-y-2">
                 {vm.alerts.map((a) => (
@@ -275,7 +275,7 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
           </Card>
 
           <Card labelledBy="audience" className="xl:col-span-2">
-            <CardTitle id="audience">Audience growth</CardTitle>
+            <CardTitle id="audience">Crescimento de audiência</CardTitle>
             <AudienceUnavailable />
           </Card>
         </div>
@@ -284,7 +284,7 @@ export default async function BrandDashboardPage({ params, searchParams }: { par
       {vm.accounts.length > 0 ? (
         <section id="scheduling-details" aria-labelledby="sched-heading" className="mt-6">
           <h2 id="sched-heading" className="mb-3 text-lg font-semibold">
-            Scheduling details per account
+            Detalhes de agendamento por conta
           </h2>
           <div className="grid gap-4 2xl:grid-cols-2">
             {vm.accounts.map((a) => (

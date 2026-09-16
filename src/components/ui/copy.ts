@@ -1,50 +1,50 @@
 /** Canonical microcopy (docs/product/PRODUCT_SPEC.md §5 and §6). Use verbatim. */
 export const DEFINITIONS = {
   coverage:
-    "Coverage: the percentage of expected posting slots — based on this account's posting schedule — that currently have a post scheduled, looking ahead to your configured target horizon. 100% means every expected slot through that horizon is filled.",
+    "Cobertura: o percentual de horários de publicação esperados — com base na programação de posts desta conta — que já têm um post agendado, olhando até o horizonte alvo configurado. 100% significa que todos os horários esperados até esse horizonte estão preenchidos.",
   runway:
-    "Estimated runway: our best estimate of how many days of scheduled content remain before this account runs out of queued posts. This is an estimate based on current schedule and queue — not a guarantee, since posting behavior in Buffer can change after this was calculated.",
+    "Autonomia estimada da fila: nossa melhor estimativa de quantos dias de conteúdo agendado ainda restam antes que esta conta fique sem posts na fila. É uma estimativa baseada na programação e na fila atuais — não uma garantia, já que o comportamento de publicação no Buffer pode mudar depois deste cálculo.",
   firstUncovered:
-    "First uncovered slot: the next date and time, based on this account's posting schedule, that has no post currently scheduled. Everything before this slot is covered; this is where the gap starts.",
+    "Primeiro horário descoberto: a próxima data e hora, de acordo com a programação de posts desta conta, que não tem nenhum post agendado. Tudo antes desse horário está coberto; é aí que a lacuna começa.",
   lastScheduled:
-    "Last scheduled date: the date of the furthest-out post currently scheduled for this account. A single far-future post here does not by itself mean the account is well covered — check Coverage and First uncovered slot too.",
+    "Último post agendado: a data do post mais distante no futuro atualmente agendado para esta conta. Um único post muito distante não significa, por si só, que a conta está bem coberta — confira também a Cobertura e o Primeiro horário descoberto.",
   postsNeeded:
-    "Posts needed: how many additional posts you'd need to schedule, at this account's normal posting frequency, to keep coverage at 100% through your target horizon.",
+    "Posts necessários: quantos posts adicionais você precisaria agendar, na frequência normal de publicação desta conta, para manter a cobertura em 100% até o seu horizonte alvo.",
   fillDeadline:
-    "Deadline to fill first gap: schedule at least one post before this date to avoid an uncovered slot in this account's queue.",
+    "Prazo para preencher a primeira lacuna: agende pelo menos um post antes desta data para evitar um horário descoberto na fila desta conta.",
   erReach:
-    "Engagement rate (by reach): (reactions + comments + shares + saves) ÷ reach for this post. Used for Instagram and Facebook, where reach is reported.",
+    "Taxa de engajamento (por alcance): (reações + comentários + compartilhamentos + salvamentos) ÷ alcance deste post. Usada para Instagram e Facebook, onde o alcance é reportado.",
   erViews:
-    "Engagement rate (by views): (reactions + comments + shares) ÷ views for this post. Used for TikTok and YouTube Shorts, where view count is the more reliable denominator.",
-  na: "N/A: this platform did not report this metric for this post. It is not the same as zero — we simply have no data for it.",
+    "Taxa de engajamento (por visualizações): (reações + comentários + compartilhamentos) ÷ visualizações deste post. Usada para TikTok e YouTube Shorts, onde a contagem de visualizações é o denominador mais confiável.",
+  na: "Indisponível: esta plataforma não reportou esta métrica para este post. Não é o mesmo que zero — simplesmente não temos dado nenhum sobre ela.",
   ambiguousZero:
-    "0 shown here means the platform reported zero — or didn't report this metric at all and Buffer defaults to zero. We can't always tell these apart. Treat a lone 0 on an otherwise active post with caution; compare against reach/views for context.",
+    "O 0 exibido aqui significa que a plataforma reportou zero — ou que não reportou esta métrica e o Buffer assume zero por padrão. Nem sempre conseguimos distinguir os dois casos. Trate com cautela um 0 isolado em um post que, no restante, teve atividade; compare com alcance/visualizações para ter contexto.",
   lifetime:
-    "Lifetime: total accumulated value for this post since it was published, as of the last sync. Period: the change in this post's metrics within the date range you've selected above. Lifetime numbers only ever go up; period numbers depend on your filter.",
+    "Acumulado: valor total acumulado por este post desde que foi publicado, até a última sincronização. Período: a variação das métricas deste post dentro do intervalo de datas que você selecionou acima. Números acumulados só aumentam; números do período dependem do seu filtro.",
   audienceUnavailable:
-    "Requires direct platform connection: Buffer does not provide follower or subscriber counts. To see audience growth here, connect this brand directly to Instagram, TikTok, or YouTube (coming soon).",
+    "Requer conexão direta com a plataforma: o Buffer não fornece contagem de seguidores ou de inscritos. Para ver o crescimento de audiência aqui, conecte esta marca diretamente ao Instagram, TikTok ou YouTube (em breve).",
   lastSynced:
-    "Last synced: when we last successfully pulled fresh data from Buffer for this item. Buffer refreshes metrics roughly once every 24 hours, so this will rarely say 'moments ago.'",
+    "Última sincronização: quando trouxemos dados novos do Buffer para este item com sucesso pela última vez. O Buffer atualiza as métricas aproximadamente uma vez a cada 24 horas, então isso raramente vai dizer 'agora há pouco'.",
   confidence:
-    "Confidence: how consistent and well-sampled this finding is — based on sample size and how repeatable the pattern was — not a formal statistical guarantee.",
+    "Confiança: o quanto este achado é consistente e bem amostrado — com base no tamanho da amostra e em quão repetível foi o padrão — e não uma garantia estatística formal.",
   snoozed:
-    "This alert won't resurface until the snooze period ends, unless the underlying condition gets worse (e.g., Warning escalates to Critical).",
-  pending: "Pending: Buffer has not ingested metrics for this post yet (this can take up to ~24h after publishing).",
-  unsupported: "Unsupported: this metric is never available for this platform via Buffer.",
-  notReported: "Not reported: metrics were synced for this post, but the platform did not include this metric.",
+    "Este alerta não voltará a aparecer até o fim do período de adiamento, a menos que a condição subjacente piore (por exemplo, Atenção escalar para Crítico).",
+  pending: "Pendente: o Buffer ainda não recebeu as métricas deste post (isso pode levar até ~24h após a publicação).",
+  unsupported: "Não suportado: esta métrica nunca fica disponível para esta plataforma via Buffer.",
+  notReported: "Não reportado: as métricas deste post foram sincronizadas, mas a plataforma não incluiu esta métrica.",
 } as const;
 
 export const STATUS_COPY = {
-  healthy: { label: "Healthy", tip: "Healthy: coverage ≥ your warning threshold (default 7 days); account connected and active." },
-  warning: { label: "Warning", tip: "Warning: coverage is below the warning threshold (default 7 days) and at or above the critical threshold (default 3 days)." },
-  critical: { label: "Critical", tip: "Critical: coverage is below the critical threshold (default 3 days)." },
-  empty: { label: "Empty", tip: "Empty: zero scheduled posts found. Every upcoming slot is uncovered." },
-  paused: { label: "Paused", tip: "Paused: the Buffer queue is paused (or cadence monitoring is paused). Scheduled posts will not go out until it is resumed." },
-  disconnected: { label: "Disconnected", tip: "Disconnected: the channel is disconnected from Buffer. We can't confirm its queue, and posts can't publish until it is reconnected in Buffer." },
-  locked: { label: "Locked", tip: "Locked: Buffer reports this channel as locked. Check the channel in Buffer." },
-  unknown: { label: "Unknown", tip: "Unknown: we can't determine coverage (no queue data yet, no posting cadence, or an invalid configuration)." },
+  healthy: { label: "Saudável", tip: "Saudável: cobertura ≥ o seu limite de atenção (padrão 7 dias); conta conectada e ativa." },
+  warning: { label: "Atenção", tip: "Atenção: a cobertura está abaixo do limite de atenção (padrão 7 dias) e igual ou acima do limite crítico (padrão 3 dias)." },
+  critical: { label: "Crítico", tip: "Crítico: a cobertura está abaixo do limite crítico (padrão 3 dias)." },
+  empty: { label: "Vazio", tip: "Vazio: nenhum post agendado encontrado. Todos os próximos horários estão descobertos." },
+  paused: { label: "Pausado", tip: "Pausado: a fila do Buffer está pausada (ou o monitoramento de cadência está pausado). Os posts agendados não serão publicados até que ela seja retomada." },
+  disconnected: { label: "Desconectado", tip: "Desconectado: o canal está desconectado do Buffer. Não conseguimos confirmar a fila dele, e nada pode ser publicado até que ele seja reconectado no Buffer." },
+  locked: { label: "Bloqueado", tip: "Bloqueado: o Buffer reporta este canal como bloqueado. Verifique o canal no Buffer." },
+  unknown: { label: "Desconhecido", tip: "Desconhecido: não conseguimos determinar a cobertura (ainda sem dados de fila, sem cadência de publicação ou configuração inválida)." },
   stale: {
-    label: "Stale",
-    tip: "Stale: this data comes from an older sync than your staleness window. The status beside it is the last known queue state, not a confirmed measurement.",
+    label: "Desatualizado",
+    tip: "Desatualizado: estes dados vêm de uma sincronização mais antiga que a sua janela de desatualização. O status ao lado é o último estado conhecido da fila, não uma medição confirmada.",
   },
 } as const;

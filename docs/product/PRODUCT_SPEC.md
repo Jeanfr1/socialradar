@@ -1,3 +1,5 @@
+> **Language update (2026-09-16):** the product owner asked for the application UI in Brazilian Portuguese. The English copy below is kept as the source of meaning; the shipped UI is pt-BR (report narratives and recommendations were already pt-BR). Code, comments and logs stay in English.
+
 # BrandPulse — Product Specification
 
 **Status:** Draft v1.0 · **Scope:** Read-only multi-brand social monitoring (no publish/edit/delete of posts) · **UI language:** English (report narratives are configurable per brand, independent of UI language) · **Data source of truth today:** Buffer GraphQL API (verified schema, 2026-09-13)

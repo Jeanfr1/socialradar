@@ -34,8 +34,8 @@ async function load(alertId: string) {
 export async function acknowledgeAlert(alertId: string): Promise<ActionResult> {
   try {
     const { user, db, alert, brandId } = await load(alertId);
-    if (alert.state === "resolved") return fail("This alert is already resolved.");
-    if (alert.state === "acknowledged") return ok("Already acknowledged.");
+    if (alert.state === "resolved") return fail("Este alerta já foi resolvido.");
+    if (alert.state === "acknowledged") return ok("Já foi reconhecido.");
     const now = new Date();
     await db.transaction(async (tx) => {
       await tx
@@ -52,7 +52,7 @@ export async function acknowledgeAlert(alertId: string): Promise<ActionResult> {
       });
     });
     revalidate(brandId);
-    return ok("Alert acknowledged.");
+    return ok("Alerta reconhecido.");
   } catch (err) {
     return toActionError(err, "acknowledgeAlert");
   }
@@ -62,10 +62,10 @@ export async function snoozeAlert(alertId: string, until: Date): Promise<ActionR
   try {
     const { user, db, alert, brandId } = await load(alertId);
     const now = new Date();
-    if (!(until instanceof Date) || Number.isNaN(until.getTime())) return fail("Choose a valid snooze time.");
-    if (until.getTime() <= now.getTime() + 5 * 60_000) return fail("Snooze time must be at least 5 minutes in the future.");
-    if (until.getTime() > now.getTime() + MAX_SNOOZE_MS) return fail("Snooze for at most 90 days.");
-    if (alert.state === "resolved") return fail("Resolved alerts can't be snoozed. Reopen it first.");
+    if (!(until instanceof Date) || Number.isNaN(until.getTime())) return fail("Escolha um horário de adiamento válido.");
+    if (until.getTime() <= now.getTime() + 5 * 60_000) return fail("O horário do adiamento precisa estar pelo menos 5 minutos no futuro.");
+    if (until.getTime() > now.getTime() + MAX_SNOOZE_MS) return fail("Adie por no máximo 90 dias.");
+    if (alert.state === "resolved") return fail("Alertas resolvidos não podem ser adiados. Reabra o alerta primeiro.");
     await db.transaction(async (tx) => {
       await tx
         .update(alerts)
@@ -81,7 +81,7 @@ export async function snoozeAlert(alertId: string, until: Date): Promise<ActionR
       });
     });
     revalidate(brandId);
-    return ok("Alert snoozed. It resurfaces earlier if the condition gets worse.");
+    return ok("Alerta adiado. Ele volta antes se a condição piorar.");
   } catch (err) {
     return toActionError(err, "snoozeAlert");
   }
@@ -90,7 +90,7 @@ export async function snoozeAlert(alertId: string, until: Date): Promise<ActionR
 export async function resolveAlert(alertId: string): Promise<ActionResult> {
   try {
     const { user, db, alert, brandId } = await load(alertId);
-    if (alert.state === "resolved") return ok("Already resolved.");
+    if (alert.state === "resolved") return ok("Já foi resolvido.");
     const now = new Date();
     await db.transaction(async (tx) => {
       await tx
@@ -107,7 +107,7 @@ export async function resolveAlert(alertId: string): Promise<ActionResult> {
       });
     });
     revalidate(brandId);
-    return ok("Alert resolved. If the condition is still present, the next evaluation opens a new alert.");
+    return ok("Alerta resolvido. Se a condição ainda existir, a próxima avaliação abre um novo alerta.");
   } catch (err) {
     return toActionError(err, "resolveAlert");
   }
@@ -117,7 +117,7 @@ export async function resolveAlert(alertId: string): Promise<ActionResult> {
 export async function reopenAlert(alertId: string): Promise<ActionResult> {
   try {
     const { user, db, alert, brandId } = await load(alertId);
-    if (alert.state === "open") return ok("Alert is already open.");
+    if (alert.state === "open") return ok("O alerta já está aberto.");
     const now = new Date();
     try {
       await db.transaction(async (tx) => {
@@ -135,11 +135,11 @@ export async function reopenAlert(alertId: string): Promise<ActionResult> {
         });
       });
     } catch (err) {
-      if (isUniqueViolation(err)) return fail("A newer alert for this condition is already open.");
+      if (isUniqueViolation(err)) return fail("Já existe um alerta mais recente aberto para esta condição.");
       throw err;
     }
     revalidate(brandId);
-    return ok("Alert reopened.");
+    return ok("Alerta reaberto.");
   } catch (err) {
     return toActionError(err, "reopenAlert");
   }
@@ -160,15 +160,15 @@ export async function alertFormAction(_prev: ActionResult, formData: FormData): 
     duration: str(formData, "duration") || undefined,
     customUntil: str(formData, "customUntil") || undefined,
   });
-  if (!parsed.success) return fail("Choose a valid action.");
+  if (!parsed.success) return fail("Escolha uma ação válida.");
   const { alertId, intent, duration, customUntil } = parsed.data;
   if (intent === "acknowledge") return acknowledgeAlert(alertId);
   if (intent === "resolve") return resolveAlert(alertId);
   if (intent === "reopen") return reopenAlert(alertId);
 
-  if (!duration) return fail("Choose how long to snooze.");
+  if (!duration) return fail("Escolha por quanto tempo adiar.");
   if (duration !== "custom") return snoozeAlert(alertId, new Date(Date.now() + (DURATIONS[duration] as number)));
-  if (!customUntil) return fail("Pick a date and time to snooze until.");
+  if (!customUntil) return fail("Escolha a data e a hora até quando adiar.");
   try {
     const user = await requireUser("action");
     const db = getDb();
@@ -179,7 +179,7 @@ export async function alertFormAction(_prev: ActionResult, formData: FormData): 
       if (b && DateTime.local().setZone(b.timezone).isValid) tz = b.timezone;
     }
     const until = DateTime.fromISO(customUntil, { zone: tz });
-    if (!until.isValid) return fail("Pick a valid date and time.");
+    if (!until.isValid) return fail("Escolha uma data e hora válidas.");
     return snoozeAlert(alertId, until.toJSDate());
   } catch (err) {
     return toActionError(err, "alertFormAction");

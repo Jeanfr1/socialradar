@@ -18,12 +18,12 @@ export function fail(message: string): ActionResult {
 
 export function toActionError(err: unknown, context: string): ActionResult {
   unstable_rethrow(err);
-  if (err instanceof AuthError) return fail("Your session has expired. Sign in again.");
-  if (err instanceof NotFoundError) return fail("This item was not found or you no longer have access to it.");
-  if (err instanceof ForbiddenError) return fail(err.message || "You don't have permission to do that.");
+  if (err instanceof AuthError) return fail("Sua sessão expirou. Entre novamente.");
+  if (err instanceof NotFoundError) return fail("Este item não foi encontrado ou você não tem mais acesso a ele.");
+  if (err instanceof ForbiddenError) return fail(err.message || "Você não tem permissão para fazer isso.");
   if (err instanceof AppError) return fail(err.message);
   logger.error(`action failed: ${context}`, { err });
-  return fail("Something went wrong. Try again.");
+  return fail("Algo deu errado. Tente novamente.");
 }
 
 export function str(fd: FormData, key: string): string {

@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <a href="#main" className="sr-only z-50 rounded bg-accent px-3 py-2 text-white focus:not-sr-only focus:fixed focus:left-2 focus:top-2">
-        Skip to content
+        Pular para o conteúdo
       </a>
       <SidebarNav
         brands={shell.brands.map((b) => ({ id: b.id, name: b.name, isDemo: b.isDemo }))}

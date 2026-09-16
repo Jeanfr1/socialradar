@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export default function Loading() {
   return (
     <div aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading alerts…</span>
+      <span className="sr-only">Carregando alertas…</span>
       <Skeleton className="mb-4 h-8 w-40" />
       <Skeleton className="mb-4 h-10 w-full" />
       {Array.from({ length: 6 }, (_, i) => (

@@ -4,7 +4,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { loginAction } from "@/server/actions/auth";
 import { getCurrentUser } from "@/server/auth/session";
 
-export const metadata: Metadata = { title: "Sign in" };
+export const metadata: Metadata = { title: "Entrar" };
 
 export default async function LoginPage() {
   const user = await getCurrentUser().catch(() => null);
@@ -14,10 +14,10 @@ export default async function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <p className="text-2xl font-semibold tracking-tight text-ink">BrandPulse</p>
-          <p className="mt-1 text-ink-2">Read-only social media operations across your brands.</p>
+          <p className="mt-1 text-ink-2">Operações de redes sociais, somente leitura, em todas as suas marcas.</p>
         </div>
         <div className="rounded-lg border border-line bg-surface p-6 shadow-sm">
-          <h1 className="mb-4 text-lg font-semibold">Sign in</h1>
+          <h1 className="mb-4 text-lg font-semibold">Entrar</h1>
           <LoginForm action={loginAction} />
         </div>
       </div>

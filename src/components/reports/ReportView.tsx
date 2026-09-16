@@ -210,7 +210,7 @@ export function ReportView({ content: c }: { content: WeeklyReportContent }) {
                         {it.externalUrl ? (
                           <a href={it.externalUrl} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-0.5">
                             <Icon name="external" className="h-3.5 w-3.5" />
-                            <span className="sr-only">Open original post (opens in a new tab)</span>
+                            <span className="sr-only">Abrir post original (abre em uma nova aba)</span>
                           </a>
                         ) : (
                           "—"
@@ -315,7 +315,7 @@ export function ReportView({ content: c }: { content: WeeklyReportContent }) {
       <Section n={10} title={L.sections.dataQuality}>
         <Narrative text={c.dataQuality.narrative} />
         <p className="text-xs text-ink-2">
-          {L.generatedAtLabel}: {when(c, c.dataQuality.generatedAt)} · cutoff {when(c, c.dataQuality.observationCutoff)}
+          {L.generatedAtLabel}: {when(c, c.dataQuality.generatedAt)} · corte de observação {when(c, c.dataQuality.observationCutoff)}
         </p>
         <p className="font-medium">{c.dataQuality.missingDataStatement}</p>
         {c.dataQuality.preliminaryReasons.length ? (
@@ -333,8 +333,8 @@ export function ReportView({ content: c }: { content: WeeklyReportContent }) {
                 <th scope="col">{L.columns.account}</th>
                 <th scope="col">{L.columns.lastSync}</th>
                 <th scope="col">Posts</th>
-                <th scope="col">Pending</th>
-                <th scope="col">Unsupported / not reported</th>
+                <th scope="col">Pendente</th>
+                <th scope="col">Não suportado / não reportado</th>
               </tr>
             </thead>
             <tbody>
@@ -345,7 +345,7 @@ export function ReportView({ content: c }: { content: WeeklyReportContent }) {
                   </th>
                   <td>
                     {when(c, a.lastPublishedSyncAt)}
-                    <div className="text-ink-2">queue: {when(c, a.lastQueueSyncAt)} ({a.queueFreshness.replace(/_/g, " ")})</div>
+                    <div className="text-ink-2">fila: {when(c, a.lastQueueSyncAt)} ({a.queueFreshness.replace(/_/g, " ")})</div>
                   </td>
                   <td className="tabular-nums">{a.postsInPeriod}</td>
                   <td className="tabular-nums">{a.metricsPendingPosts}</td>

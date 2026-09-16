@@ -41,6 +41,10 @@
 | Zeros ambíguos | O Buffer retorna 0 quando a rede não reporta; tratados como `reported_zero` com aviso, nunca como fato |
 | Frequência do cron no plano Hobby da Vercel | Hobby executa cron 1×/dia; Pro segue o agendamento declarado |
 
+## 3.1 Idioma
+
+Interface em pt-BR (páginas, componentes, alertas gerados pelo domínio e formatação de datas/números com locale pt-BR). Relatórios e recomendações já eram pt-BR. Código, logs e comentários seguem em inglês.
+
 ## 4. Operação
 
 - `npm run worker` (host always-on) **ou** `/api/cron/tick` (Vercel Cron) — equivalentes e seguros em conjunto.

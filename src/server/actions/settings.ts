@@ -54,7 +54,7 @@ export async function createConnectionAction(_prev: ActionResult, formData: Form
     );
     await queueDiscovery(conn.id);
     revalidatePath("/settings/connections");
-    return ok(`Connected "${conn.label}". The key (${conn.keyHint ?? "hidden"}) was validated with Buffer and stored encrypted. Channel discovery is queued.`);
+    return ok(`Conexão "${conn.label}" criada. A chave (${conn.keyHint ?? "oculta"}) foi validada com o Buffer e armazenada criptografada. A descoberta de canais foi enfileirada.`);
   } catch (err) {
     return toActionError(err, "createConnection");
   }
@@ -67,7 +67,7 @@ export async function rotateCredentialAction(_prev: ActionResult, formData: Form
     const raw = formData.get("apiKey");
     const conn = await rotateCredential(getDb(), user, connectionId, typeof raw === "string" ? raw : "", validateBufferCredential);
     revalidatePath("/settings/connections");
-    return ok(`Key replaced and validated (${conn.keyHint ?? "hidden"}).`);
+    return ok(`Chave substituída e validada (${conn.keyHint ?? "oculta"}).`);
   } catch (err) {
     return toActionError(err, "rotateCredential");
   }
@@ -78,7 +78,7 @@ export async function revalidateConnectionAction(_prev: ActionResult, formData: 
     const user = await requireUser("action");
     const conn = await revalidateConnection(getDb(), user, uuidField(formData, "connectionId"), validateBufferCredential);
     revalidatePath("/settings/connections");
-    return conn.status === "active" ? ok("Buffer accepted the stored key.") : fail(`Validation failed: the connection is now "${conn.status}". ${conn.lastErrorMessage ?? ""}`.trim());
+    return conn.status === "active" ? ok("O Buffer aceitou a chave armazenada.") : fail(`Falha na validação: a conexão agora está como "${conn.status}". ${conn.lastErrorMessage ?? ""}`.trim());
   } catch (err) {
     return toActionError(err, "revalidateConnection");
   }
@@ -91,7 +91,7 @@ export async function rediscoverChannelsAction(_prev: ActionResult, formData: Fo
     const conn = await getConnection(getDb(), user, uuidField(formData, "connectionId"));
     await queueDiscovery(conn.id);
     revalidatePath("/settings/connections");
-    return ok("Channel discovery queued. It runs at the next worker cycle, subject to Buffer quota reserves.");
+    return ok("Descoberta de canais enfileirada. Ela roda no próximo ciclo do worker, sujeita às reservas de cota do Buffer.");
   } catch (err) {
     return toActionError(err, "rediscoverChannels");
   }
@@ -100,11 +100,11 @@ export async function rediscoverChannelsAction(_prev: ActionResult, formData: Fo
 export async function removeConnectionAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   try {
     const user = await requireUser("action");
-    if (!checkbox(formData, "confirm")) return fail("Confirm that you want to remove this connection.");
+    if (!checkbox(formData, "confirm")) return fail("Confirme que você quer remover esta conexão.");
     await removeConnection(getDb(), user, uuidField(formData, "connectionId"));
     revalidatePath("/settings/connections");
     revalidatePath("/portfolio");
-    return ok("Connection removed. The stored key was wiped; historical data is kept.");
+    return ok("Conexão removida. A chave armazenada foi apagada; os dados históricos foram mantidos.");
   } catch (err) {
     return toActionError(err, "removeConnection");
   }
@@ -119,7 +119,7 @@ export async function mapAccountAction(_prev: ActionResult, formData: FormData):
     revalidatePath("/settings/connections");
     revalidatePath("/portfolio");
     if (brandId) revalidatePath(`/brands/${brandId}`, "layout");
-    return ok(brandId ? "Channel mapped. It appears in the brand's dashboards from now on." : "Channel unmapped. It no longer appears in any brand.");
+    return ok(brandId ? "Canal vinculado. A partir de agora ele aparece nos dashboards da marca." : "Canal desvinculado. Ele não aparece mais em nenhuma marca.");
   } catch (err) {
     return toActionError(err, "mapAccount");
   }
@@ -132,7 +132,7 @@ export async function ignoreAccountAction(_prev: ActionResult, formData: FormDat
     await setAccountIgnored(getDb(), user, uuidField(formData, "accountId"), ignored);
     revalidatePath("/settings/connections");
     revalidatePath("/portfolio");
-    return ok(ignored ? "Channel ignored." : "Channel restored to the mapping list.");
+    return ok(ignored ? "Canal ignorado." : "Canal restaurado para a lista de vinculação.");
   } catch (err) {
     return toActionError(err, "ignoreAccount");
   }
@@ -163,7 +163,7 @@ export async function updateBrandAction(_prev: ActionResult, formData: FormData)
     const user = await requireUser("action");
     const brandId = uuidField(formData, "brandId");
     const time = /^(\d{2}):(\d{2})$/.exec(str(formData, "reportTime"));
-    if (!time) return fail("Report time must use HH:MM (24-hour).");
+    if (!time) return fail("O horário do relatório precisa usar HH:MM (formato 24 horas).");
     const day = intField(formData, "reportDay");
     await updateBrand(getDb(), user, brandId, {
       name: str(formData, "name"),
@@ -178,7 +178,7 @@ export async function updateBrandAction(_prev: ActionResult, formData: FormData)
       reportSchedule: { enabled: checkbox(formData, "reportEnabled"), dayOfWeek: day ?? 1, hour: Number(time[1]), minute: Number(time[2]) },
     });
     revalidatePath("/", "layout");
-    return ok("Brand settings saved.");
+    return ok("Configurações da marca salvas.");
   } catch (err) {
     return toActionError(err, "updateBrand");
   }
@@ -190,7 +190,7 @@ export async function archiveBrandAction(_prev: ActionResult, formData: FormData
     const archived = str(formData, "archived") === "true";
     await setBrandArchived(getDb(), user, uuidField(formData, "brandId"), archived);
     revalidatePath("/", "layout");
-    return ok(archived ? "Brand archived. It no longer appears in dashboards; data is kept." : "Brand restored.");
+    return ok(archived ? "Marca arquivada. Ela não aparece mais nos dashboards; os dados foram mantidos." : "Marca restaurada.");
   } catch (err) {
     return toActionError(err, "archiveBrand");
   }
@@ -201,10 +201,10 @@ export async function addMemberAction(_prev: ActionResult, formData: FormData): 
     const user = await requireUser("action");
     const brandId = uuidField(formData, "brandId");
     const role = str(formData, "role") as Role;
-    if (!ROLES.includes(role)) return fail("Choose a role.");
+    if (!ROLES.includes(role)) return fail("Escolha um perfil.");
     const member = await addMember(getDb(), user, brandId, { email: str(formData, "email"), role });
     revalidatePath(`/settings/brands/${brandId}`);
-    return ok(`${member.name} added as ${member.role}.`);
+    return ok(`${member.name} adicionado como ${member.role}.`);
   } catch (err) {
     return toActionError(err, "addMember");
   }
@@ -215,10 +215,10 @@ export async function changeRoleAction(_prev: ActionResult, formData: FormData):
     const user = await requireUser("action");
     const brandId = uuidField(formData, "brandId");
     const role = str(formData, "role") as Role;
-    if (!ROLES.includes(role)) return fail("Choose a role.");
+    if (!ROLES.includes(role)) return fail("Escolha um perfil.");
     await changeRole(getDb(), user, brandId, uuidField(formData, "userId"), role);
     revalidatePath(`/settings/brands/${brandId}`);
-    return ok("Role updated.");
+    return ok("Perfil atualizado.");
   } catch (err) {
     return toActionError(err, "changeRole");
   }
@@ -230,7 +230,7 @@ export async function removeMemberAction(_prev: ActionResult, formData: FormData
     const brandId = uuidField(formData, "brandId");
     await removeMember(getDb(), user, brandId, uuidField(formData, "userId"));
     revalidatePath(`/settings/brands/${brandId}`);
-    return ok("Member removed from this brand.");
+    return ok("Membro removido desta marca.");
   } catch (err) {
     return toActionError(err, "removeMember");
   }
@@ -255,7 +255,7 @@ export async function updateCadenceAction(_prev: ActionResult, formData: FormDat
     const slots: NonNullable<PostingScheduleInput["slots"]> = [];
     for (const day of DAYS) {
       const times = parseTimes(str(formData, `times_${day}`));
-      if (times === null) return fail(`Times for ${day.toUpperCase()} must be HH:MM values separated by commas.`);
+      if (times === null) return fail(`Os horários de ${day.toUpperCase()} precisam ser valores HH:MM separados por vírgulas.`);
       const paused = checkbox(formData, `paused_${day}`);
       if (times.length || paused) slots.push({ day, paused, times });
     }
@@ -268,8 +268,8 @@ export async function updateCadenceAction(_prev: ActionResult, formData: FormDat
       staleAfterMinutes: intField(formData, "staleAfterMinutes"),
     };
     for (const [k, v] of Object.entries(nums)) {
-      if (Number.isNaN(v)) return fail(`${k} must be a whole number.`);
-      if (v === null && k !== "postsPerWeek") return fail(`${k} is required.`);
+      if (Number.isNaN(v)) return fail(`${k} precisa ser um número inteiro.`);
+      if (v === null && k !== "postsPerWeek") return fail(`${k} é obrigatório.`);
     }
     const schedule = await updatePostingSchedule(getDb(), user, accountId, {
       mode: str(formData, "mode") as PostingScheduleInput["mode"],
@@ -284,7 +284,7 @@ export async function updateCadenceAction(_prev: ActionResult, formData: FormDat
       staleAfterMinutes: nums.staleAfterMinutes as number,
     });
     revalidatePath("/", "layout");
-    return ok(`Cadence saved (${schedule.mode.replace(/_/g, " ")}). Coverage and alerts use it from the next evaluation.`);
+    return ok(`Cadência salva (${schedule.mode.replace(/_/g, " ")}). A cobertura e os alertas passam a usá-la a partir da próxima avaliação.`);
   } catch (err) {
     return toActionError(err, "updateCadence");
   }
@@ -304,7 +304,7 @@ export async function createUserAction(_prev: ActionResult, formData: FormData):
       isWorkspaceAdmin: checkbox(formData, "isWorkspaceAdmin"),
     });
     revalidatePath("/settings/users");
-    return ok(`${created.name} can now sign in. Share the temporary password through a secure channel, then assign brands in Settings → Brands.`);
+    return ok(`${created.name} já pode entrar. Compartilhe a senha temporária por um canal seguro e depois atribua as marcas em Configurações → Marcas.`);
   } catch (err) {
     return toActionError(err, "createUser");
   }
@@ -316,7 +316,7 @@ export async function setUserActiveAction(_prev: ActionResult, formData: FormDat
     const active = str(formData, "active") === "true";
     await setUserActive(getDb(), user, uuidField(formData, "userId"), active);
     revalidatePath("/settings/users");
-    return ok(active ? "User reactivated." : "User deactivated and signed out everywhere.");
+    return ok(active ? "Usuário reativado." : "Usuário desativado e desconectado de todas as sessões.");
   } catch (err) {
     return toActionError(err, "setUserActive");
   }

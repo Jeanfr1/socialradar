@@ -2,7 +2,7 @@ export function Skeleton({ className = "h-4 w-full" }: { className?: string }) {
   return <div className={`skeleton ${className}`} />;
 }
 
-export function PageSkeleton({ cards = 6, label = "Loading…" }: { cards?: number; label?: string }) {
+export function PageSkeleton({ cards = 6, label = "Carregando…" }: { cards?: number; label?: string }) {
   return (
     <div aria-busy="true" aria-live="polite">
       <span className="sr-only">{label}</span>
@@ -22,7 +22,7 @@ export function PageSkeleton({ cards = 6, label = "Loading…" }: { cards?: numb
   );
 }
 
-export function TableSkeleton({ rows = 8, label = "Loading…" }: { rows?: number; label?: string }) {
+export function TableSkeleton({ rows = 8, label = "Carregando…" }: { rows?: number; label?: string }) {
   return (
     <div aria-busy="true" aria-live="polite" className="rounded-lg border border-line bg-surface p-4">
       <span className="sr-only">{label}</span>

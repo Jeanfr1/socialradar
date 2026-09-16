@@ -26,41 +26,41 @@ export function AlertActions({
       <div className="flex flex-wrap items-end gap-2">
         {state === "open" || state === "snoozed" ? (
           <SubmitButton name="intent" value="acknowledge" variant="secondary">
-            Acknowledge
+            Reconhecer
           </SubmitButton>
         ) : null}
         {state !== "resolved" ? (
           <>
             <div>
               <label htmlFor={`${id}-duration`} className="sr-only">
-                Snooze duration
+                Duração do adiamento
               </label>
               <select id={`${id}-duration`} name="duration" value={duration} onChange={(e) => setDuration(e.target.value)} className="input min-w-28">
-                <option value="1h">1 hour</option>
-                <option value="1d">1 day</option>
-                <option value="1w">1 week</option>
-                <option value="custom">Custom…</option>
+                <option value="1h">1 hora</option>
+                <option value="1d">1 dia</option>
+                <option value="1w">1 semana</option>
+                <option value="custom">Personalizado…</option>
               </select>
             </div>
             {duration === "custom" ? (
               <div>
                 <label htmlFor={`${id}-until`} className="label text-xs">
-                  Snooze until ({timezone}, {zone})
+                  Adiar até ({timezone}, {zone})
                 </label>
                 <input id={`${id}-until`} name="customUntil" type="datetime-local" required className="input" />
               </div>
             ) : null}
             <SubmitButton name="intent" value="snooze" variant="secondary">
-              Snooze
+              Adiar
             </SubmitButton>
             <SubmitButton name="intent" value="resolve" variant="secondary">
-              Resolve
+              Resolver
             </SubmitButton>
           </>
         ) : null}
         {state !== "open" ? (
           <SubmitButton name="intent" value="reopen" variant="secondary">
-            {state === "snoozed" ? "Unsnooze" : "Reopen"}
+            {state === "snoozed" ? "Retomar" : "Reabrir"}
           </SubmitButton>
         ) : null}
       </div>

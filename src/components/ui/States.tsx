@@ -59,7 +59,7 @@ export function ErrorBanner({ message, retryHref }: { message: string; retryHref
     <Banner tone="error" role="alert">
       {message}{" "}
       <Link href={retryHref} className="link font-medium" prefetch={false}>
-        Retry
+        Tentar novamente
       </Link>
     </Banner>
   );
@@ -67,20 +67,21 @@ export function ErrorBanner({ message, retryHref }: { message: string; retryHref
 
 export function AudienceUnavailable() {
   return (
-    <UnavailableState title="Requires direct platform connection">
+    <UnavailableState title="Requer conexão direta com a plataforma">
       <p>{DEFINITIONS.audienceUnavailable}</p>
       <details className="mt-2">
-        <summary className="link cursor-pointer text-sm">Learn more</summary>
+        <summary className="link cursor-pointer text-sm">Saiba mais</summary>
         <p className="mt-1 text-sm">
-          Buffer&apos;s API exposes post-level metrics only. Follower and subscriber counts need direct Instagram, TikTok or YouTube
-          connections, which are not available yet. BrandPulse never shows audience growth as 0 or as an estimate.
+          A API do Buffer expõe apenas métricas em nível de post. Contagens de seguidores e de inscritos exigem conexões diretas com
+          Instagram, TikTok ou YouTube, que ainda não estão disponíveis. O BrandPulse nunca mostra crescimento de audiência como 0 nem
+          como estimativa.
         </p>
       </details>
     </UnavailableState>
   );
 }
 
-export function PermissionMessage({ title = "You don't have access to this page", children }: { title?: string; children?: React.ReactNode }) {
+export function PermissionMessage({ title = "Você não tem acesso a esta página", children }: { title?: string; children?: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-xl rounded-lg border border-line bg-surface p-6" role="status">
       <p className="flex items-center gap-2 text-base font-semibold text-ink">
@@ -88,11 +89,11 @@ export function PermissionMessage({ title = "You don't have access to this page"
         {title}
       </p>
       <div className="mt-2 text-ink-2">
-        {children ?? "Your role doesn't include this area. Contact a workspace administrator if you need access."}
+        {children ?? "Seu perfil não inclui esta área. Fale com um administrador do workspace se precisar de acesso."}
       </div>
       <p className="mt-4">
         <Link href="/portfolio" className="link">
-          Back to Portfolio
+          Voltar para o Portfólio
         </Link>
       </p>
     </div>

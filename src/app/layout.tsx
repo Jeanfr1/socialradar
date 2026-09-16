@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "BrandPulse", template: "%s · BrandPulse" },
-  description: "Read-only social media operations and analytics across brands.",
+  description: "Operações e análises de redes sociais, somente leitura, em todas as marcas.",
   robots: { index: false, follow: false },
 };
 
@@ -14,7 +14,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );

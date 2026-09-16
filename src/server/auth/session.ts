@@ -21,7 +21,7 @@ export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const SESSION_TOUCH_INTERVAL_MS = 10 * 60 * 1000;
 export const MAX_FAILED_LOGINS = 5;
 export const LOCKOUT_MS = 15 * 60 * 1000;
-export const LOGIN_ERROR_MESSAGE = "We couldn't sign you in. Check your email and password and try again.";
+export const LOGIN_ERROR_MESSAGE = "Não foi possível entrar. Confira seu e-mail e sua senha e tente novamente.";
 
 /** Safe identity DTO: never includes password hash, lockout state or session tokens. */
 export interface SessionUser {

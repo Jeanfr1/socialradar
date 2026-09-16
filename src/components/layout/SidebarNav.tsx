@@ -38,10 +38,10 @@ function NavLink({ href, label, icon, active, nested, badge }: NavLinkProps) {
 
 const BRAND_SECTIONS: { suffix: string; label: string }[] = [
   { suffix: "", label: "Dashboard" },
-  { suffix: "/calendar", label: "Calendar" },
-  { suffix: "/content", label: "Content" },
-  { suffix: "/recommendations", label: "Recommendations" },
-  { suffix: "/reports", label: "Reports" },
+  { suffix: "/calendar", label: "Calendário" },
+  { suffix: "/content", label: "Conteúdo" },
+  { suffix: "/recommendations", label: "Recomendações" },
+  { suffix: "/reports", label: "Relatórios" },
 ];
 
 export function SidebarNav({
@@ -78,27 +78,27 @@ export function SidebarNav({
   const starts = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const nav = (
-    <nav aria-label="Main" className="flex h-full flex-col gap-4 overflow-y-auto p-3">
+    <nav aria-label="Principal" className="flex h-full flex-col gap-4 overflow-y-auto p-3">
       <div className="px-2.5 pt-1">
         <Link href="/portfolio" className="text-lg font-semibold tracking-tight text-ink">
           BrandPulse
         </Link>
-        <p className="text-xs text-ink-2">Read-only monitoring</p>
+        <p className="text-xs text-ink-2">Monitoramento somente leitura</p>
       </div>
       <ul className="space-y-0.5">
         <li>
-          <NavLink href="/portfolio" label="Portfolio" icon="grid" active={is("/portfolio")} />
+          <NavLink href="/portfolio" label="Portfólio" icon="grid" active={is("/portfolio")} />
         </li>
         <li>
-          <NavLink href="/alerts" label="Alerts" icon="bell" active={starts("/alerts")} />
+          <NavLink href="/alerts" label="Alertas" icon="bell" active={starts("/alerts")} />
         </li>
       </ul>
       <div>
         <p className="px-2.5 pb-1 text-xs font-semibold uppercase tracking-wide text-ink-2" id="nav-brands">
-          Brands
+          Marcas
         </p>
         {brands.length === 0 ? (
-          <p className="px-2.5 text-xs text-ink-2">No brands assigned.</p>
+          <p className="px-2.5 text-xs text-ink-2">Nenhuma marca atribuída.</p>
         ) : (
           <ul aria-labelledby="nav-brands" className="space-y-0.5">
             {brands.map((b) => {
@@ -117,7 +117,7 @@ export function SidebarNav({
                     }
                   />
                   {expanded ? (
-                    <ul className="mt-0.5 space-y-0.5" aria-label={`${b.name} sections`}>
+                    <ul className="mt-0.5 space-y-0.5" aria-label={`Seções de ${b.name}`}>
                       {BRAND_SECTIONS.slice(1).map((s) => (
                         <li key={s.suffix}>
                           <NavLink href={`${base}${s.suffix}`} label={s.label} nested active={starts(`${base}${s.suffix}`)} />
@@ -134,22 +134,22 @@ export function SidebarNav({
       {canSeeSettings ? (
         <div>
           <p className="px-2.5 pb-1 text-xs font-semibold uppercase tracking-wide text-ink-2" id="nav-settings">
-            Settings
+            Configurações
           </p>
           <ul aria-labelledby="nav-settings" className="space-y-0.5">
             <li>
-              <NavLink href="/settings/brands" label="Brands & cadence" icon="settings" active={starts("/settings/brands")} />
+              <NavLink href="/settings/brands" label="Marcas e cadência" icon="settings" active={starts("/settings/brands")} />
             </li>
             {isWorkspaceAdmin ? (
               <>
                 <li>
-                  <NavLink href="/settings/connections" label="Connections" icon="unlink" active={starts("/settings/connections")} />
+                  <NavLink href="/settings/connections" label="Conexões" icon="unlink" active={starts("/settings/connections")} />
                 </li>
                 <li>
-                  <NavLink href="/settings/users" label="Users & roles" icon="user" active={starts("/settings/users")} />
+                  <NavLink href="/settings/users" label="Usuários e perfis" icon="user" active={starts("/settings/users")} />
                 </li>
                 <li>
-                  <NavLink href="/settings/system" label="System health" icon="database" active={starts("/settings/system")} />
+                  <NavLink href="/settings/system" label="Saúde do sistema" icon="database" active={starts("/settings/system")} />
                 </li>
               </>
             ) : null}
@@ -163,7 +163,7 @@ export function SidebarNav({
         <form action={logoutAction}>
           <button type="submit" className="mt-1 flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 text-sm text-ink hover:bg-canvas">
             <Icon name="logout" />
-            Sign out
+            Sair
           </button>
         </form>
       </div>
@@ -181,7 +181,7 @@ export function SidebarNav({
           onClick={() => setOpen((v) => !v)}
         >
           <Icon name={open ? "close" : "menu"} className="h-5 w-5" />
-          <span className="sr-only">{open ? "Close navigation" : "Open navigation"}</span>
+          <span className="sr-only">{open ? "Fechar navegação" : "Abrir navegação"}</span>
         </button>
         <Link href="/portfolio" className="font-semibold">
           BrandPulse
@@ -189,7 +189,7 @@ export function SidebarNav({
       </div>
       {open ? (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <button type="button" aria-label="Close navigation" className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
+          <button type="button" aria-label="Fechar navegação" className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
           <div id="mobile-nav" className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-surface shadow-xl">
             {nav}
           </div>

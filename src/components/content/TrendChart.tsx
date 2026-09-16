@@ -11,7 +11,7 @@ export interface TrendPoint {
 }
 
 function formatValue(v: number, unit: "count" | "percent"): string {
-  return unit === "percent" ? `${v.toFixed(2)}%` : new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(v);
+  return unit === "percent" ? `${v.toFixed(2)}%` : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(v);
 }
 
 /** Single-metric line chart (no dual axes). Missing days break the line. Includes a text summary and data table. */
@@ -40,7 +40,7 @@ export function TrendChart({
         {summary}
       </p>
       {withData.length === 0 ? (
-        <p className="flex h-40 items-center justify-center rounded border border-dashed border-line-strong text-sm text-ink-2">No usable data in this range.</p>
+        <p className="flex h-40 items-center justify-center rounded border border-dashed border-line-strong text-sm text-ink-2">Sem dados utilizáveis neste intervalo.</p>
       ) : (
         <div className="h-48 w-full" aria-hidden="true">
           <ResponsiveContainer width="100%" height="100%">
@@ -54,7 +54,7 @@ export function TrendChart({
                 label={{ value: yLabel, angle: -90, position: "insideLeft", offset: 0, style: { fontSize: 11, fill: "#5B6472", textAnchor: "middle" } }}
               />
               <Tooltip
-                formatter={(v) => (typeof v === "number" ? formatValue(v, unit) : "No data")}
+                formatter={(v) => (typeof v === "number" ? formatValue(v, unit) : "Sem dados")}
                 labelStyle={{ color: "#111827" }}
               />
               <Line type="linear" dataKey="value" name={yLabel} stroke="#2451B0" strokeWidth={2} dot={{ r: 3, fill: "#2451B0" }} connectNulls={false} isAnimationActive={false} />
@@ -63,13 +63,13 @@ export function TrendChart({
         </div>
       )}
       <details className="mt-2 text-xs">
-        <summary className="link cursor-pointer">Data table</summary>
+        <summary className="link cursor-pointer">Tabela de dados</summary>
         <div className="mt-1 max-h-56 overflow-auto">
           <table className="data-table w-full">
             <caption className="sr-only">{title}</caption>
             <thead>
               <tr>
-                <th scope="col">Day</th>
+                <th scope="col">Dia</th>
                 <th scope="col">{yLabel}</th>
                 <th scope="col">Posts</th>
               </tr>
@@ -80,7 +80,7 @@ export function TrendChart({
                   <th scope="row" className="font-normal">
                     {p.label}
                   </th>
-                  <td className="tabular-nums">{p.value === null ? "No data" : formatValue(p.value, unit)}</td>
+                  <td className="tabular-nums">{p.value === null ? "Sem dados" : formatValue(p.value, unit)}</td>
                   <td className="tabular-nums">{p.n}</td>
                 </tr>
               ))}

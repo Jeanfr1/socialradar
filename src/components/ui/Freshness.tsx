@@ -19,11 +19,11 @@ export function Freshness({ vm, prefix }: { vm: FreshnessVM; prefix?: string }) 
       <span title={vm.absolute ?? undefined}>
         {prefix ? `${prefix} ` : ""}
         {vm.label}
-        {vm.level === "hard" ? " · outdated" : ""}
+        {vm.level === "hard" ? " · desatualizado" : ""}
       </span>
-      <InfoTip label="About Last synced">
+      <InfoTip label="Sobre a Última sincronização">
         {DEFINITIONS.lastSynced}
-        {vm.absolute ? ` Last successful sync: ${vm.absolute}.` : ""}
+        {vm.absolute ? ` Última sincronização bem-sucedida: ${vm.absolute}.` : ""}
       </InfoTip>
     </span>
   );

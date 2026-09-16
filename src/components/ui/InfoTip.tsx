@@ -45,7 +45,7 @@ export function Term({ term, definition, align }: { term: string; definition: st
   return (
     <span className="inline-flex items-center gap-0.5">
       <span>{term}</span>
-      <InfoTip label={`About ${term}`} align={align}>
+      <InfoTip label={`Sobre ${term}`} align={align}>
         {definition}
       </InfoTip>
     </span>

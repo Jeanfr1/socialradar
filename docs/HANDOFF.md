@@ -1,6 +1,6 @@
 # Handoff — status por funcionalidade
 
-Última verificação: 2026-09-16. Base: 281 testes (25 arquivos), `tsc --noEmit` limpo, `next build` OK.
+Última verificação: 2026-09-16. **Em produção:** https://socialradar-xi.vercel.app (Vercel `socialradar` + Supabase `yuluwgtlsshhwhsricyy`, eu-west-1). Base: 281 testes (25 arquivos), `tsc --noEmit` limpo, `next build` OK.
 
 ## 1. Implementado e verificado com dados reais
 
@@ -16,14 +16,14 @@
 | Relatórios semanais pt-BR | 6 relatórios gerados (4 finais, 2 preliminares com motivos por conta); versionamento e snapshot com hash |
 | Recomendações com evidência | 12 recomendações reais com amostra, comparação, hipótese rotulada, métrica de sucesso e janela |
 | Segurança | Varredura de 21 tabelas / 16.829 linhas sem chave em texto puro; isolamento por marca com 404; auditoria |
-| Agendamento serverless | `/api/cron/tick`: 404 sem segredo e com segredo errado, executa jobs com o segredo correto |
+| Agendamento serverless | `/api/cron/tick` em produção: 404 sem segredo, executa jobs com o segredo correto (sync do Buffer em 1,4 s, alertas em 5,4 s) |
 | App | 19 rotas; `/portfolio` redireciona sem sessão; download de relatório sem sessão responde 401 |
 
 ## 2. Implementado, aguardando ação externa
 
 | Item | O que falta |
 |---|---|
-| Deploy Vercel + Supabase | Connection string do Supabase e token da Vercel; passo a passo em `docs/DEPLOYMENT.md` |
+| ~~Deploy Vercel + Supabase~~ | **Concluído em 2026-09-16**: migrations aplicadas, dados migrados (879 posts, 13.524 observações), cron diário 11:30 UTC, CI/CD ativo pelo GitHub |
 | Narrativa por IA nos relatórios | `ANTHROPIC_API_KEY` não configurada; hoje as narrativas são determinísticas (funcionam sem IA) |
 | Cadência real por conta | Os canais usam horários fixos que não batem com os slots do Buffer; ajuste fino em Settings → Brands |
 | Rotação das chaves Buffer | As 5 chaves foram coladas no chat; rotacionar no Buffer e usar Settings → Connections → Rotate key |
@@ -46,3 +46,13 @@
 - `npm run worker` (host always-on) **ou** `/api/cron/tick` (Vercel Cron) — equivalentes e seguros em conjunto.
 - Scripts: `sync:now`, `reports:run`, `insights:run`, `setup:brands`, `seed:demo`, `connections:import`.
 - Runbooks, backup/restore e rotação de chaves: `docs/OPERATIONS.md`.
+
+## 5. Produção
+
+| Item | Valor |
+|---|---|
+| App | https://socialradar-xi.vercel.app |
+| Banco | Supabase `yuluwgtlsshhwhsricyy` (eu-west-1), pooler de sessão, `sslmode=require&uselibpqcompat=true` |
+| Agendamento | Vercel Cron diário 11:30 UTC (plano Hobby); um cron externo chamando a mesma URL aumenta a frequência |
+| Deploy | Push em `main` dispara build automático na Vercel |
+| Verificado em produção | login 200 · rota protegida 307 · cron 404 sem segredo · PDF sem sessão 401 · sync Buffer e alertas executados |

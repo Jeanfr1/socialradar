@@ -1,76 +1,98 @@
-# Deployment Plan
+# Deployment Plan — Vercel + Supabase
 
-BrandPulse is a modular monolith: one Next.js web app + one worker process sharing a PostgreSQL database. No other infrastructure is required.
+BrandPulse is a modular monolith: a Next.js app plus background work (sync, alerts, insights, weekly reports) sharing one PostgreSQL database.
 
-## Target architecture (recommended)
+On Vercel there is no long-running process, so the background work runs through **`/api/cron/tick`**, an authenticated endpoint that does exactly what the worker loop does: recovers stuck jobs, schedules everything due, then claims and runs queued jobs within a time budget. The `npm run worker` process stays available for any always-on host; running both is safe (`FOR UPDATE SKIP LOCKED` + dedupe keys).
 
-| Component | Recommendation | Why |
+| Component | Service | Notes |
 |---|---|---|
-| Web | Container on a managed runtime (e.g. Fly.io, Render, Railway, AWS App Runner / ECS Fargate, Google Cloud Run with min instances ≥1) running `npm run start` | Node 22 server with server actions and route handlers. |
-| Worker | Same image, separate service, command `npm run worker`, 1–2 instances, **always on** (not scale-to-zero) | Durable jobs, weekly reports must run without traffic. |
-| Database | Managed PostgreSQL 15+ (e.g. Neon, Supabase, RDS, Cloud SQL) with PITR backups | Relational model, `SKIP LOCKED` job queue, partial unique indexes. |
-| Secrets | Platform secret manager (AWS Secrets Manager / GCP Secret Manager / Doppler / Fly secrets) | Provides `BRANDPULSE_KEK` (or a mounted `BRANDPULSE_KEK_FILE`), `DATABASE_URL`, `ANTHROPIC_API_KEY`. |
-| TLS / domain | Platform-managed HTTPS | Set `SECURE_COOKIES=true`. |
+| Web + cron | Vercel | `vercel.json` registers the cron. Function `maxDuration` is 60 s. |
+| Database | Supabase PostgreSQL | Use the **Session pooler** connection string (IPv4-friendly, works from serverless). |
+| Secrets | Vercel Environment Variables | `BRANDPULSE_KEK` lives here, never in the database or repo. |
+| Provider credentials | Encrypted in the database | Added through Settings → Connections (or `npm run connections:import`). |
 
-> Vercel-style serverless hosting works for the web app only; the worker still needs an always-on process elsewhere.
+## 1. Supabase
 
-## Environment
+1. Create a project (choose a region close to your users; note the database password).
+2. Project Settings → Database → Connection string → **Session pooler**, e.g.
+   `postgresql://postgres.<ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres`
+3. Append `?sslmode=require`.
+4. Apply the schema from your machine:
+   ```bash
+   DATABASE_URL='postgresql://…pooler.supabase.com:5432/postgres?sslmode=require' npm run db:migrate
+   ```
 
-See `.env.example`. Production minimum: `DATABASE_URL`, `BRANDPULSE_KEK` or `BRANDPULSE_KEK_FILE`, `BRANDPULSE_KEK_VERSION`, `APP_BASE_URL`, `SECURE_COOKIES=true`, `NODE_ENV=production`. Optional: `ANTHROPIC_API_KEY`, `BRANDPULSE_AI_MODEL` (default `claude-opus-5`), quota reserve fractions, sync intervals, `LOG_LEVEL`.
+BrandPulse uses plain PostgreSQL only — no Supabase Auth, Storage or PostgREST. Row Level Security is not required because every query goes through the server with membership checks; leaving RLS enabled on these tables without policies would block the app's own service connection, so keep these tables as created by the migrations.
 
-The KEK must never be stored in the database, the repository, or the same backup as the database.
+### Moving existing local data (optional)
 
-## Container
+Keeps the synced history and encrypted connections. Use the **same** `BRANDPULSE_KEK` in production, otherwise stored credentials cannot be decrypted (re-adding the keys in the UI also works).
 
-```dockerfile
-FROM node:22-bookworm-slim AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=optional
-
-FROM deps AS build
-COPY . .
-RUN npm run build
-
-FROM node:22-bookworm-slim
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=build /app ./
-USER node
-EXPOSE 3000
-CMD ["npm", "run", "start"]
+```bash
+PGBIN=node_modules/@embedded-postgres/darwin-x64/native/bin
+$PGBIN/pg_dump --data-only --no-owner --disable-triggers \
+  --exclude-table=drizzle.'*' "$LOCAL_DATABASE_URL" > brandpulse-data.sql
+$PGBIN/psql "$SUPABASE_DATABASE_URL" -v ON_ERROR_STOP=1 -f brandpulse-data.sql
 ```
 
-Worker service: same image, `CMD ["npm","run","worker"]`. (`embedded-postgres` is a dev dependency used only by `npm run db:local`; production images may prune dev dependencies after the build if `tsx` is kept for the worker, or bundle the worker.)
+## 2. Vercel
 
-## Release procedure
+Environment variables (Production):
 
-1. CI: `npm ci`, `npm run typecheck`, `npm test`, `npm run build`.
-2. Run migrations once per release before starting new code: `npm run db:migrate` (migrations are additive; see `drizzle/`).
-3. Deploy worker and web (order does not matter; jobs are backward compatible within a release).
-4. Smoke test: sign in, Portfolio loads, Settings → System shows a fresh worker heartbeat, `sync:now -- --queue-only` succeeds for one connection.
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Supabase session-pooler string with `?sslmode=require` |
+| `BRANDPULSE_KEK` | 32 random bytes, base64 (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`) |
+| `BRANDPULSE_KEK_VERSION` | `1` |
+| `APP_BASE_URL` | `https://<your-domain>` |
+| `SECURE_COOKIES` | `true` |
+| `CRON_SECRET` | long random string; Vercel Cron sends it as `Authorization: Bearer …` |
+| `DB_POOL_MAX` | `3` |
+| `ANTHROPIC_API_KEY` | optional; without it report narratives are deterministic |
+| `BRANDPULSE_AI_MODEL` | optional, default `claude-opus-5` |
 
-## First-time production setup
+Deploy:
 
-1. Provision PostgreSQL and secrets; deploy.
-2. `npm run db:migrate`
-3. `BRANDPULSE_OWNER_PASSWORD=… npm run setup:owner -- --email you@agency.com --name "You"` (one-off job).
-4. Sign in → Settings → Brands: create brands (timezone default America/Sao_Paulo, report language pt-BR).
-5. Settings → Connections → Add Buffer connection (paste key into the server-side form; it is validated, encrypted and never shown again).
-6. Map discovered channels to brands; configure cadence and thresholds per account.
-7. Wait for the first queue sync (≤ 2 min after mapping; or run `sync:now`). Metrics appear after the first published sync.
+```bash
+vercel login                     # or: export VERCEL_TOKEN=…
+vercel link
+vercel env add DATABASE_URL production   # repeat per variable
+vercel --prod
+```
+
+Then create the first user (one-off, from your machine, pointing at Supabase):
+
+```bash
+DATABASE_URL='…supabase…' BRANDPULSE_OWNER_PASSWORD='a-long-passphrase' \
+  npm run setup:owner -- --email you@example.com --name "You"
+```
+
+## 3. Cron cadence
+
+`vercel.json` schedules `/api/cron/tick` hourly (`17 * * * *`). **Vercel Hobby runs cron jobs once per day**; Pro runs them on the declared schedule. Consequences on Hobby: data refreshes daily and the weekly report appears on the first run after Monday 08:00 (brand timezone) rather than at 08:00 sharp. Options: upgrade to Pro, or trigger the endpoint from any external scheduler:
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/tick
+```
+
+The endpoint is idempotent, so extra calls are harmless. Each call spends at most a few Buffer API requests and respects the quota reserved for your existing publishing automations.
+
+## 4. Post-deploy verification
+
+1. `GET https://<domain>/api/cron/tick` without the header → **404** (the secret protects it).
+2. With the header → JSON listing scheduled and processed jobs.
+3. Sign in, open Portfolio, then Settings → System: recent sync runs and quota state are visible.
+4. Brand → Reports: the weekly report opens and the PDF/CSV download works.
 
 ## Security checklist
 
 - HTTPS only, `SECURE_COOKIES=true`.
-- Database not publicly reachable; TLS to the database.
-- KEK in secret manager; access limited to web + worker service identities.
-- Log shipping keeps redaction (never log request bodies of the connections form).
-- Rotate the Buffer keys that were ever shared outside the secret flow (e.g. pasted into chats or files).
-- Enabling any Buffer mutation (publishing/scheduling) requires a separate explicit authorization and a code change: the client rejects mutation documents.
+- `BRANDPULSE_KEK` only in Vercel env (and your own backup) — never in the repository or the database dump.
+- Rotate any Buffer key that was ever shared outside the secure form, then use Settings → Connections → Rotate key.
+- Enabling any Buffer mutation (publishing/scheduling) requires a separate, explicit authorization and a code change: the client rejects mutation documents.
 
 ## Scaling notes
 
-- 5 Buffer accounts × ~16 requests/day is tiny; the bottleneck is Buffer quota, not compute.
-- Add worker instances only for many brands/reports; sync concurrency per connection is already serialized by dedupe keys.
-- Metric observations grow ~ posts × metrics × refreshes (≈ 10 rows/post/day for 35 days). Partition or prune `metric_observations` older than 13 months if needed (reports store their own snapshots).
+- 5 Buffer accounts ≈ 16 requests/day; the constraint is Buffer's quota, not compute.
+- `metric_observations` grows roughly with posts × metrics × daily refreshes; prune beyond 13 months if needed (reports keep their own snapshots).
+- For a heavier workload, run `npm run worker` on an always-on host (Fly.io, Railway, a small VM) and keep the cron as a safety net.

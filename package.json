@@ -23,7 +23,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "setup:brands": "tsx scripts/setup-brands.ts",
-    "insights:run": "tsx scripts/insights-run.ts"
+    "insights:run": "tsx scripts/insights-run.ts",
+    "db:copy": "tsx scripts/copy-data.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.125.0",

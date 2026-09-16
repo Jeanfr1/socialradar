@@ -8,3 +8,5 @@ data/
 *.log
 coverage/
 *.tsbuildinfo
+.vercel/
+.vercel

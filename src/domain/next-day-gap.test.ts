@@ -41,6 +41,11 @@ describe("next-day gap", () => {
     expect(evaluateNextDayGap({ now: NOW, timezone: TZ, posts }).isGap).toBe(true);
   });
 
+  it("ignores posts published natively outside Buffer (not scheduled)", () => {
+    expect(evaluateNextDayGap({ now: NOW, timezone: TZ, posts: [{ status: "sent", at: sp(17, 8), via: "network" }] }).isGap).toBe(false);
+    expect(evaluateNextDayGap({ now: NOW, timezone: TZ, posts: [{ status: "sent", at: sp(17, 8), via: "buffer" }] }).isGap).toBe(true);
+  });
+
   it("uses local calendar days (23:30 local is still today)", () => {
     const late = new Date("2026-09-18T02:30:00Z"); // 23:30 on the 17th in São Paulo
     const r = evaluateNextDayGap({ now: late, timezone: TZ, posts: [{ status: "sent", at: new Date("2026-09-18T02:00:00Z") }] });

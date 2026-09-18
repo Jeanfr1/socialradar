@@ -5,7 +5,8 @@
  * and nothing is scheduled for tomorrow's local date. Accounts that do not post today are not flagged: they are
  * either inactive or publish outside Buffer, and flagging them every day would be noise.
  * Only confirmed posts count for tomorrow (status scheduled/sending with a resolved time); drafts and posts
- * awaiting approval do not.
+ * awaiting approval do not. Posts published natively on the platform (outside Buffer) do not make "today" a
+ * scheduling day: an account that publishes by hand would otherwise be flagged every day.
  */
 import { DateTime } from "luxon";
 import { localDateKey } from "./periods";
@@ -14,6 +15,8 @@ export interface DayPost {
   status: string;
   /** Publication time: sentAt for published posts, dueAt otherwise. */
   at: Date | null;
+  /** Buffer "via": "network" means published natively on the platform, not scheduled. */
+  via?: string | null;
 }
 
 export interface NextDayGapResult {
@@ -39,7 +42,7 @@ export function evaluateNextDayGap({ now, timezone, posts }: { now: Date; timezo
   for (const p of posts) {
     if (!p.at) continue;
     const day = localDateKey(p.at, timezone);
-    if (day === today && TODAY_STATUSES.has(p.status)) postsToday++;
+    if (day === today && TODAY_STATUSES.has(p.status) && p.via !== "network") postsToday++;
     else if (day === tomorrow && TOMORROW_STATUSES.has(p.status)) scheduledTomorrow++;
   }
   return { today, tomorrow, postsToday, scheduledTomorrow, isGap: postsToday > 0 && scheduledTomorrow === 0, tomorrowStartsAt: tomorrowLocal.toJSDate() };

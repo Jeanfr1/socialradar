@@ -259,7 +259,7 @@ export async function loadCalendar(
   const syncs = await lastQueueSyncByConnection(db, [...new Set(accounts.map((a) => a.connectionId))]);
   if (accounts.length > 0) {
     const around = await db
-      .select({ accountId: posts.socialAccountId, status: posts.status, dueAt: posts.dueAt, sentAt: posts.sentAt, errorMessage: posts.errorMessage })
+      .select({ accountId: posts.socialAccountId, status: posts.status, dueAt: posts.dueAt, sentAt: posts.sentAt, errorMessage: posts.errorMessage, via: posts.via })
       .from(posts)
       .where(
         and(
@@ -272,7 +272,7 @@ export async function loadCalendar(
       const mine = around.filter((p) => p.accountId === acc.id);
       const lastSync = syncs.get(acc.connectionId) ?? null;
       if (lastSync && now.getTime() - lastSync.getTime() <= NEXT_DAY_GAP_MAX_DATA_AGE_HOURS * HOUR_MS) {
-        const dayPosts: DayPost[] = mine.filter((p) => p.status !== "error").map((p) => ({ status: p.status, at: p.status === "sent" ? p.sentAt ?? p.dueAt : p.dueAt }));
+        const dayPosts: DayPost[] = mine.filter((p) => p.status !== "error").map((p) => ({ status: p.status, at: p.status === "sent" ? p.sentAt ?? p.dueAt : p.dueAt, via: p.via }));
         const gap = evaluateNextDayGap({ now, timezone: tz, posts: dayPosts });
         if (gap.isGap) {
           gapDays.add(gap.tomorrow);

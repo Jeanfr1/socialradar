@@ -117,7 +117,7 @@ export async function evaluateAlerts(
   const dayPosts = new Map<string, DayPost[]>();
   if (statuses.length > 0) {
     const rows = await db
-      .select({ socialAccountId: posts.socialAccountId, status: posts.status, sentAt: posts.sentAt, dueAt: posts.dueAt })
+      .select({ socialAccountId: posts.socialAccountId, status: posts.status, sentAt: posts.sentAt, dueAt: posts.dueAt, via: posts.via })
       .from(posts)
       .where(
         and(
@@ -128,7 +128,7 @@ export async function evaluateAlerts(
       );
     for (const r of rows) {
       const list = dayPosts.get(r.socialAccountId) ?? [];
-      list.push({ status: r.status, at: r.status === "sent" ? r.sentAt ?? r.dueAt : r.dueAt });
+      list.push({ status: r.status, at: r.status === "sent" ? r.sentAt ?? r.dueAt : r.dueAt, via: r.via });
       dayPosts.set(r.socialAccountId, list);
     }
   }

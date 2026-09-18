@@ -373,44 +373,54 @@ const UNIT_OVERRIDES: Record<string, string> = {
   provider_engagement_rate: "percentage",
 };
 
-/** Stores one observation per (post, metric, Buffer refresh) and maintains the latest-value table. */
+/**
+ * Stores one observation per (post, metric, Buffer refresh) and maintains the latest-value table.
+ * Rows are written in bulk (a few round trips per sync) because the database may be far from the function.
+ */
 export async function ingestPostMetrics(
   db: Db,
   items: ProviderPost[],
   stored: Map<string, { id: string; socialAccountId: string }>,
   { now, runId }: { now: Date; runId: string | null },
 ): Promise<number> {
-  let written = 0;
+  const rows: (typeof metricObservations.$inferInsert & { postId: string; providerUpdatedAt: Date })[] = [];
   for (const p of items) {
     const ref = stored.get(p.externalPostId);
     // No refresh timestamp → Buffer has not ingested metrics yet: store nothing rather than zeros.
     if (!ref || !p.metricsUpdatedAt || !p.metrics) continue;
-    const rows = p.metrics
-      .filter((m): m is typeof m & { key: string } => m.key !== null)
-      .map((m) => ({
-        subject: "post" as const,
+    const metricsUpdatedAt = p.metricsUpdatedAt;
+    for (const m of p.metrics) {
+      if (m.key === null) continue;
+      rows.push({
+        subject: "post",
         postId: ref.id,
         socialAccountId: ref.socialAccountId,
         metricKey: m.key,
         value: m.value,
-        valueStatus: m.value === 0 ? ("reported_zero" as const) : ("reported" as const),
+        valueStatus: m.value === 0 ? "reported_zero" : "reported",
         unit: UNIT_OVERRIDES[m.key] ?? m.unit,
-        semantics: "lifetime_cumulative" as const,
-        providerUpdatedAt: p.metricsUpdatedAt,
+        semantics: "lifetime_cumulative",
+        providerUpdatedAt: metricsUpdatedAt,
         retrievedAt: now,
         source: METRICS_SOURCE,
         syncRunId: runId,
-      }));
-    if (rows.length === 0) continue;
-    const inserted = await db.insert(metricObservations).values(rows).onConflictDoNothing().returning({ id: metricObservations.id });
+      });
+    }
+  }
+  // One row per (post, metric) per statement: an upsert cannot touch the same row twice.
+  const unique = [...new Map(rows.map((r) => [`${r.postId}:${r.metricKey}`, r])).values()];
+  let written = 0;
+  for (let i = 0; i < unique.length; i += 500) {
+    const chunk = unique.slice(i, i + 500);
+    const inserted = await db.insert(metricObservations).values(chunk).onConflictDoNothing().returning({ id: metricObservations.id });
     written += inserted.length;
     await db
       .insert(postMetricsLatest)
       .values(
-        rows.map((r) => ({
+        chunk.map((r) => ({
           postId: r.postId,
           metricKey: r.metricKey,
-          value: r.value,
+          value: r.value ?? null,
           valueStatus: r.valueStatus,
           unit: r.unit,
           providerUpdatedAt: r.providerUpdatedAt,

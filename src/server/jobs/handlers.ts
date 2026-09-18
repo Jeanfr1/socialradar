@@ -3,8 +3,10 @@
  * (`/api/cron/tick`). Both claim from the same durable queue, so either deployment model works and
  * running both at once is safe (dedupe keys + SKIP LOCKED).
  */
+import { and, eq, lt } from "drizzle-orm";
 import { evaluateAlerts } from "@/server/alerts/engine";
 import type { Db } from "@/server/db/client";
+import { syncRuns } from "@/server/db/schema";
 import { claimJobs, completeJob, enqueueJob, failJob, purgeFinishedJobs, recoverExpiredLocks, type JobRow } from "@/server/jobs/queue";
 import { JOB_KINDS, scheduleSyncJobs, scheduleWeeklyReports, schedulerOptionsFromEnv, type SchedulerOptions } from "@/server/jobs/scheduler";
 import { ProviderError } from "@/server/providers/types";
@@ -93,6 +95,11 @@ export async function scheduleDueWork(
   opts: SchedulerOptions = schedulerOptionsFromEnv(),
 ): Promise<{ recovered: number; enqueued: string[] }> {
   const recovered = await recoverExpiredLocks(db, now);
+  // Sync runs left "running" by a stopped process (e.g. a serverless timeout) are closed as interrupted.
+  await db
+    .update(syncRuns)
+    .set({ status: "failed", finishedAt: now, errorCode: "interrupted", errorMessage: "Run did not finish (process stopped)" })
+    .where(and(eq(syncRuns.status, "running"), lt(syncRuns.startedAt, new Date(now.getTime() - 15 * 60_000))));
   const enqueued = [...(await scheduleSyncJobs(db, now, opts)), ...(await scheduleWeeklyReports(db, now))];
   const alerts = await enqueueJob(db, { kind: JOB_KINDS.evaluateAlerts, payload: {}, dedupeKey: `${JOB_KINDS.evaluateAlerts}:all` });
   if (alerts.enqueued) enqueued.push(`${JOB_KINDS.evaluateAlerts}:all`);

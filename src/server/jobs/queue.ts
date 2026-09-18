@@ -110,3 +110,12 @@ export async function recoverExpiredLocks(db: Db, now = new Date()): Promise<num
 export async function purgeFinishedJobs(db: Db, olderThan: Date): Promise<void> {
   await db.delete(jobs).where(and(inArray(jobs.status, ["succeeded", "failed", "dead"]), lt(jobs.finishedAt, olderThan)));
 }
+
+/** Queued jobs that could run right now (used by the serverless tick to decide whether to continue). */
+export async function countDueJobs(db: Db, now = new Date()): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(jobs)
+    .where(and(eq(jobs.status, "queued"), lte(jobs.runAt, now)));
+  return row?.n ?? 0;
+}

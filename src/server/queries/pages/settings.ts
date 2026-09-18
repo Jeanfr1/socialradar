@@ -12,7 +12,7 @@ import { fmtDateTime, fmtDateTimeShort, fmtRelative, PLATFORM_LABEL, WEEKDAY_LAB
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 function channelState(a: { isDisconnected: boolean; isLocked: boolean; isQueuePaused: boolean }) {
-  return a.isDisconnected ? "Disconnected" : a.isLocked ? "Locked" : a.isQueuePaused ? "Queue paused" : "Active";
+  return a.isDisconnected ? "Desconectado" : a.isLocked ? "Bloqueado" : a.isQueuePaused ? "Fila pausada" : "Ativo";
 }
 
 export function timezoneOptions(): string[] {
@@ -120,7 +120,7 @@ export async function loadConnectionsSettings(db: Db, user: SessionUser, now: Da
       state: channelState(r),
       mappingStatus: r.mappingStatus,
       brandId: r.brandId,
-      brandName: r.brandId ? (brand?.name ?? "Another brand (no access)") : null,
+      brandName: r.brandId ? (brand?.name ?? "Outra marca (sem acesso)") : null,
       canChange: !r.brandId || (!!brand && roleAtLeast(brand.role, "manager")),
       isDemo: r.isDemo,
       lastSeen: fmtRelative(r.lastSeenAt, now) ?? "",
@@ -138,9 +138,9 @@ export async function loadConnectionsSettings(db: Db, user: SessionUser, now: Da
         accountName: c.externalAccountName,
         isDemo: c.isDemo,
         added: fmtDateTime(c.createdAt, "UTC") ?? "",
-        lastValidated: c.lastValidatedAt ? `${fmtRelative(c.lastValidatedAt, now)}` : "Never",
-        lastSync: c.lastSyncSuccessAt ? `${fmtRelative(c.lastSyncSuccessAt, now)} (${fmtDateTime(c.lastSyncSuccessAt, "UTC")})` : "Never",
-        lastDiscovered: disc ? (fmtRelative(disc, now) ?? "") : "Never",
+        lastValidated: c.lastValidatedAt ? `${fmtRelative(c.lastValidatedAt, now)}` : "Nunca",
+        lastSync: c.lastSyncSuccessAt ? `${fmtRelative(c.lastSyncSuccessAt, now)} (${fmtDateTime(c.lastSyncSuccessAt, "UTC")})` : "Nunca",
+        lastDiscovered: disc ? (fmtRelative(disc, now) ?? "") : "Nunca",
         discoveryStale: !disc || now.getTime() - disc.getTime() > 24 * 3_600_000,
         lastError: c.lastErrorMessage ?? c.lastErrorCode,
         failures: c.consecutiveFailures,
@@ -258,7 +258,7 @@ export async function loadBrandSettings(db: Db, user: SessionUser, brandId: stri
     role,
     isOwner,
     members: members
-      ? members.map((m) => ({ userId: m.userId, name: m.name, email: m.email, role: m.role, isActive: m.isActive, lastLogin: m.lastLoginAt ? (fmtRelative(m.lastLoginAt, now) ?? "") : "Never", isSelf: m.userId === user.id }))
+      ? members.map((m) => ({ userId: m.userId, name: m.name, email: m.email, role: m.role, isActive: m.isActive, lastLogin: m.lastLoginAt ? (fmtRelative(m.lastLoginAt, now) ?? "") : "Nunca", isSelf: m.userId === user.id }))
       : null,
     cadences: rows.map(({ account, schedule }) => {
       const s = schedule ?? { ...DEFAULT_POSTING_SCHEDULE };
@@ -270,7 +270,7 @@ export async function loadBrandSettings(db: Db, user: SessionUser, brandId: stri
         providerSchedule:
           (account.providerPostingSchedule ?? [])
             .map((d) => `${WEEKDAY_LABEL[d.day] ?? d.day}: ${d.paused ? "paused" : d.times.join(", ") || "none"}`)
-            .join(" · ") || "No Buffer posting schedule",
+            .join(" · ") || "Sem horários de publicação no Buffer",
         isDefault: schedule === null,
         mode: s.mode,
         timezone: s.timezone ?? "",
@@ -313,7 +313,7 @@ export async function loadUsersSettings(db: Db, user: SessionUser, now: Date): P
       email: u.email,
       isWorkspaceAdmin: u.isWorkspaceAdmin,
       isActive: u.isActive,
-      lastLogin: u.lastLoginAt ? (fmtRelative(u.lastLoginAt, now) ?? "") : "Never",
+      lastLogin: u.lastLoginAt ? (fmtRelative(u.lastLoginAt, now) ?? "") : "Nunca",
       created: fmtDateTime(u.createdAt, "UTC") ?? "",
       brands: rows.filter((r) => r.userId === u.id).map((r) => `${r.name} (${r.role})`),
       isSelf: u.id === user.id,
@@ -410,7 +410,7 @@ export async function loadSystemHealth(db: Db, user: SessionUser, now: Date): Pr
       label: c.label,
       status: c.status,
       isDemo: c.isDemo,
-      lastSync: c.lastSyncSuccessAt ? (fmtRelative(c.lastSyncSuccessAt, now) ?? "") : "Never",
+      lastSync: c.lastSyncSuccessAt ? (fmtRelative(c.lastSyncSuccessAt, now) ?? "") : "Nunca",
       failures: c.consecutiveFailures,
       windows: Object.entries(c.rateLimitState ?? {}).map(([name, w]) => ({
         name,

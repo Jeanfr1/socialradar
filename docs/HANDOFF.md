@@ -2,6 +2,21 @@
 
 Última verificação: 2026-09-16. **Em produção:** https://socialradar-xi.vercel.app (Vercel `socialradar` + Supabase `yuluwgtlsshhwhsricyy`, eu-west-1). Base: 281 testes (25 arquivos), `tsc --noEmit` limpo, `next build` OK.
 
+## 0. Estrutura atual do app (redesenho de 2026-09-18)
+
+Interface minimalista em pt-BR, uma marca por vez (seletor no topo), quatro abas:
+
+| Aba | O que mostra |
+|---|---|
+| Calendário | Mês (grade) ou agenda no celular; posts agendados, publicados, aguardando aprovação e com falha; filtro por conta. Alerta crítico **só** quando a conta tem post agendado pelo Buffer hoje e nenhum amanhã; aviso de falha de publicação. |
+| Métricas | Semana ou mês: visualizações, engajamento (reações + comentários + compartilhamentos + salvamentos), taxa de engajamento e posts publicados, com variação justa (média por post, só posts com 2+ dias). Por conta, visualizações por dia e posts com mais visualizações. |
+| Relatórios | Semanais (segunda 08:00) e mensais (dia 1º 08:00), com versão final/preliminar e PDF. |
+| Recomendações | Semana ou mês: o que está funcionando, o que não está (incluindo posts acima/abaixo da média do próprio grupo) e o que mudar. |
+
+Configurações (ícone de engrenagem): conexões do Buffer, marcas, usuários e saúde do sistema. Seguidores ficaram fora por decisão do usuário (exigem conexões diretas com as redes). Sem IA por decisão do usuário (textos determinísticos).
+
+Atualização: cron diário da Vercel às 11:30 UTC, que se reencadeia até esvaziar a fila (todas as conexões sincronizadas no mesmo dia).
+
 ## 1. Implementado e verificado com dados reais
 
 | Área | Evidência |

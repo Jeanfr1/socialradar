@@ -7,18 +7,18 @@ import { requireUser } from "@/server/auth/authz";
 import { getDb } from "@/server/db/client";
 import { loadSystemHealth, type SystemHealthVM } from "@/server/queries/pages/settings";
 
-export const metadata: Metadata = { title: "System health" };
+export const metadata: Metadata = { title: "Saúde do sistema" };
 
 export default async function SystemPage() {
   const user = await requireUser("page");
-  if (!user.isWorkspaceAdmin) return <PermissionMessage title="System health is visible to workspace administrators" />;
+  if (!user.isWorkspaceAdmin) return <PermissionMessage title="A saúde do sistema é visível apenas para administradores do workspace" />;
   let vm: SystemHealthVM;
   try {
     vm = await loadSystemHealth(getDb(), user, new Date());
   } catch {
     return (
       <>
-        <PageHeader title="System health" />
+        <PageHeader title="Saúde do sistema" />
         <ErrorBanner message="We couldn't load system health." retryHref="/settings/system" />
       </>
     );
@@ -26,24 +26,24 @@ export default async function SystemPage() {
   const online = vm.workers.filter((w) => w.online).length;
   return (
     <>
-      <PageHeader title="System health" subtitle="Background workers, job queue, Buffer quota and recent synchronizations. Times in UTC." />
-      {online === 0 ? <Banner tone="error" role="alert">No sync worker has reported in the last 5 minutes. Data will go stale until a worker runs (npm run worker).</Banner> : null}
+      <PageHeader title="Saúde do sistema" subtitle="Sincronizações, fila de tarefas e cota do Buffer. Horários em UTC." />
+      {online === 0 ? <Banner tone="error" role="alert">Nenhum processo de sincronização contínuo ativo. Em produção a atualização roda uma vez por dia pelo agendador da Vercel.</Banner> : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card labelledBy="workers">
           <CardTitle id="workers">Workers</CardTitle>
           {vm.workers.length === 0 ? (
-            <p className="text-sm text-ink-2">No worker has ever reported a heartbeat.</p>
+            <p className="text-sm text-ink-2">Nenhum processo contínuo registrado (normal quando a atualização roda pelo agendador diário).</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table w-full text-sm">
-                <caption className="sr-only">Worker heartbeats</caption>
+                <caption className="sr-only">Processos de sincronização</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Worker</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Last seen</th>
-                    <th scope="col">Jobs</th>
+                    <th scope="col">Processo</th>
+                    <th scope="col">Situação</th>
+                    <th scope="col">Visto por último</th>
+                    <th scope="col">Tarefas</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -70,13 +70,13 @@ export default async function SystemPage() {
         </Card>
 
         <Card labelledBy="jobs">
-          <CardTitle id="jobs">Job queue</CardTitle>
+          <CardTitle id="jobs">Fila de tarefas</CardTitle>
           {vm.jobCounts.length === 0 ? (
-            <p className="text-sm text-ink-2">No jobs recorded.</p>
+            <p className="text-sm text-ink-2">Nenhuma tarefa registrada.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table w-full text-sm">
-                <caption className="sr-only">Jobs by kind and status</caption>
+                <caption className="sr-only">Tarefas por tipo e situação</caption>
                 <thead>
                   <tr>
                     <th scope="col">Kind</th>
@@ -120,8 +120,8 @@ export default async function SystemPage() {
         </Card>
       </div>
 
-      <h2 className="mb-3 mt-6 text-lg font-semibold">Connections: quota and recent syncs</h2>
-      {vm.connections.length === 0 ? <p className="text-sm text-ink-2">No connections.</p> : null}
+      <h2 className="mb-3 mt-6 text-lg font-semibold">Conexões: cota e sincronizações recentes</h2>
+      {vm.connections.length === 0 ? <p className="text-sm text-ink-2">Nenhuma conexão.</p> : null}
       <div className="grid gap-4 xl:grid-cols-2">
         {vm.connections.map((c) => (
           <Card key={c.id} labelledBy={`sys-${c.id}`}>
@@ -131,11 +131,11 @@ export default async function SystemPage() {
               </span>
             </CardTitle>
             <p className="mb-2 text-xs text-ink-2">
-              Last successful sync: {c.lastSync} · {c.failures} consecutive failures
+              Última sincronização: {c.lastSync} · {c.failures} consecutive failures
             </p>
-            <h3 className="mb-1 text-sm font-semibold">Buffer rate-limit windows (shared with your publishing automations)</h3>
+            <h3 className="mb-1 text-sm font-semibold">Limites de uso da API do Buffer (compartilhados com suas automações de publicação)</h3>
             {c.windows.length === 0 ? (
-              <p className="mb-3 text-xs text-ink-2">No rate-limit headers observed yet.</p>
+              <p className="mb-3 text-xs text-ink-2">Nenhum limite de uso registrado ainda.</p>
             ) : (
               <ul className="mb-3 space-y-1.5">
                 {c.windows.map((w) => (
@@ -146,25 +146,25 @@ export default async function SystemPage() {
                         {w.remaining}/{w.limit} remaining ({w.pct}%) · resets {w.resets}
                       </span>
                     </div>
-                    <div className="mt-0.5 h-2 overflow-hidden rounded bg-canvas" role="img" aria-label={`${w.pct}% of ${w.name} quota remaining`}>
+                    <div className="mt-0.5 h-2 overflow-hidden rounded bg-canvas" role="img" aria-label={`${w.pct}% restante da cota ${w.name}`}>
                       <div className={`h-full ${w.pct < 20 ? "bg-critical" : w.pct < 50 ? "bg-warning" : "bg-accent"}`} style={{ width: `${w.pct}%` }} />
                     </div>
                   </li>
                 ))}
               </ul>
             )}
-            <h3 className="mb-1 text-sm font-semibold">Recent sync runs</h3>
+            <h3 className="mb-1 text-sm font-semibold">Sincronizações recentes</h3>
             {c.runs.length === 0 ? (
-              <p className="text-xs text-ink-2">No sync runs yet.</p>
+              <p className="text-xs text-ink-2">Nenhuma sincronização ainda.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="data-table w-full text-xs">
-                  <caption className="sr-only">Recent sync runs for {c.label}</caption>
+                  <caption className="sr-only">Sincronizações recentes for {c.label}</caption>
                   <thead>
                     <tr>
                       <th scope="col">Started</th>
                       <th scope="col">Kind</th>
-                      <th scope="col">Status</th>
+                      <th scope="col">Situação</th>
                       <th scope="col">Duration</th>
                       <th scope="col">Requests</th>
                       <th scope="col">Items</th>

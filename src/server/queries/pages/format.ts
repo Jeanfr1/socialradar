@@ -46,7 +46,7 @@ export function dayKey(at: Date, tz: string): string {
   return dt(at, tz).toISODate() as string;
 }
 
-/** Relative time: "just now", "42 min ago", "5 h ago", "3 d ago", "in 2 d". */
+/** Relative time: "agora", "há 42 min", "há 5 h", "há 3 d", "em 2 d". */
 export function fmtRelative(at: Date | null | undefined, now: Date): string | null {
   if (!at) return null;
   const diffMs = now.getTime() - at.getTime();
@@ -54,32 +54,32 @@ export function fmtRelative(at: Date | null | undefined, now: Date): string | nu
   const abs = Math.abs(diffMs);
   const min = Math.round(abs / 60_000);
   let text: string;
-  if (min < 1) return future ? "in under a minute" : "just now";
+  if (min < 1) return future ? "em menos de um minuto" : "agora";
   if (min < 60) text = `${min} min`;
   else if (min < 48 * 60) text = `${Math.round(min / 60)} h`;
   else text = `${Math.round(min / 1440)} d`;
-  return future ? `in ${text}` : `${text} ago`;
+  return future ? `em ${text}` : `há ${text}`;
 }
 
 export function fmtSynced(at: Date | null | undefined, now: Date): string {
   const rel = fmtRelative(at, now);
-  return rel ? `Synced ${rel}` : "Never synced";
+  return rel ? `Sincronizado ${rel}` : "Nunca sincronizado";
 }
 
 export function hoursSince(at: Date | null | undefined, now: Date): number | null {
   return at ? (now.getTime() - at.getTime()) / 3_600_000 : null;
 }
 
-const NUM = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
-const INT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const NUM = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+const INT = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
 
 export function fmtNum(n: number | null | undefined): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
+  if (n === null || n === undefined || !Number.isFinite(n)) return "Indisponível";
   return Math.abs(n) >= 100 ? INT.format(n) : NUM.format(n);
 }
 
 export function fmtPct(n: number | null | undefined, digits = 1): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return "N/A";
+  if (n === null || n === undefined || !Number.isFinite(n)) return "Indisponível";
   return `${n.toFixed(digits)}%`;
 }
 
@@ -90,7 +90,7 @@ export function fmtSignedPct(n: number, digits = 1): string {
 export function fmtDays(n: number | null | undefined): string | null {
   if (n === null || n === undefined || !Number.isFinite(n)) return null;
   const r = Math.round(n * 10) / 10;
-  return `${r} ${r === 1 ? "day" : "days"}`;
+  return `${r} ${r === 1 ? "dia" : "dias"}`;
 }
 
 export function plural(n: number, singular: string, pluralForm = `${singular}s`): string {

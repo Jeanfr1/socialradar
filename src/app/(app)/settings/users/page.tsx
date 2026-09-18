@@ -68,7 +68,7 @@ export default async function UsersPage() {
               <th scope="col">Papel</th>
               <th scope="col">Marcas que você pode ver</th>
               <th scope="col">Último acesso</th>
-              <th scope="col">Status</th>
+              <th scope="col">Situação</th>
             </tr>
           </thead>
           <tbody>

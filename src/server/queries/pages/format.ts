@@ -8,7 +8,7 @@ import type { Platform } from "@/domain/types";
 const SAFE_TZ = (tz: string) => (DateTime.local().setZone(tz).isValid ? tz : "UTC");
 
 function dt(at: Date, tz: string): DateTime {
-  return DateTime.fromJSDate(at, { zone: SAFE_TZ(tz) }).setLocale("en-US");
+  return DateTime.fromJSDate(at, { zone: SAFE_TZ(tz) }).setLocale("pt-BR");
 }
 
 /** Short zone label such as "GMT-3" or "EDT". */

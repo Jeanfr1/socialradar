@@ -22,7 +22,7 @@ export const DEFAULT_POSTING_SCHEDULE = {
   horizonDays: 14,
   warningDays: 7,
   criticalDays: 3,
-  staleAfterMinutes: 360,
+  staleAfterMinutes: 1560,
 } as const satisfies Omit<typeof postingSchedules.$inferInsert, "socialAccountId" | "updatedBy" | "updatedAt">;
 
 type AccountRow = typeof socialAccounts.$inferSelect;

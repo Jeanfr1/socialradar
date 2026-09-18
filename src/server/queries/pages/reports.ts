@@ -1,5 +1,6 @@
 /** Weekly report history and in-app report view models (content rendered as stored; narratives already localized). */
-import { isValidTimezone, nextReportRunAt, previousCompleteWeek, weekBefore, weekContaining } from "@/domain/periods";
+import { DateTime } from "luxon";
+import { isValidTimezone, nextReportRunAt, periodContaining, previousCompleteWeek, weekBefore, weekContaining } from "@/domain/periods";
 import { NotFoundError, requireBrandRole, roleAtLeast } from "@/server/auth/authz";
 import type { SessionUser } from "@/server/auth/session";
 import type { Db } from "@/server/db/client";
@@ -7,12 +8,14 @@ import { getReportVersion, listReportVersions } from "@/server/reports/service";
 import type { WeeklyReportContent } from "@/server/reports/types";
 import { redactText } from "@/server/security/redact";
 import { fmtDate, fmtDateTime, fmtRelative } from "./format";
+import { periodLabel } from "./workspace";
 
 export interface ReportVersionVM {
   id: string;
   periodStart: string;
   periodEnd: string;
   weekLabel: string;
+  kind: "week" | "month";
   version: number;
   trigger: "scheduled" | "manual";
   status: "generating" | "final" | "preliminary" | "failed";
@@ -44,19 +47,20 @@ export interface ReportListVM {
 
 const STATUS_LABEL: Record<ReportVersionVM["status"], string> = {
   final: "Final",
-  preliminary: "Preliminary",
-  failed: "Generation incomplete",
-  generating: "Generating…",
+  preliminary: "Preliminar",
+  failed: "Geração incompleta",
+  generating: "Gerando…",
 };
 
 function toVM(r: Awaited<ReturnType<typeof listReportVersions>>[number], tz: string, now: Date): ReportVersionVM {
-  const start = new Date(`${r.periodStart}T12:00:00Z`);
-  const end = new Date(`${r.periodEnd}T12:00:00Z`);
+  const kind = r.periodKind === "month" ? "month" : "week";
+  const period = periodContaining(kind, DateTime.fromISO(r.periodStart, { zone: tz }).toJSDate(), tz);
   return {
     id: r.id,
     periodStart: r.periodStart,
     periodEnd: r.periodEnd,
-    weekLabel: `${fmtDate(start, "UTC")} – ${fmtDate(end, "UTC")}`,
+    weekLabel: periodLabel(period),
+    kind,
     version: r.version,
     trigger: r.trigger,
     status: r.status,
@@ -120,6 +124,6 @@ export async function loadReportView(db: Db, user: SessionUser, brandId: string,
     canRegenerate: roleAtLeast(role, "manager"),
     report: { ...toVM(self ?? report, tz, now), isPreliminary: report.isPreliminary, isDemo: report.isDemo },
     content,
-    versions: all.filter((r) => r.periodStart === report.periodStart).map((r) => toVM(r, tz, now)),
+    versions: all.filter((r) => r.periodStart === report.periodStart && r.periodKind === report.periodKind).map((r) => toVM(r, tz, now)),
   };
 }

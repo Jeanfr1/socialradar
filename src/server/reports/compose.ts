@@ -212,14 +212,7 @@ export function composeReport(facts: ReportFacts): WeeklyReportContent {
     const g = c.atGeneration;
     if (g.isDisconnected) needs.push({ id: `disconnected:${c.accountId}`, text: m.insights.disconnected(c.handle), accountId: c.accountId, evidence: {} });
     else if (g.freshness !== "fresh") needs.push({ id: `sync_stale:${c.accountId}`, text: m.insights.syncStale(c.handle), accountId: c.accountId, evidence: { values: { freshness: g.freshness } } });
-    else if (g.coverageState === "critical" || g.coverageState === "empty" || g.coverageState === "warning") {
-      needs.push({
-        id: `coverage:${c.accountId}`,
-        text: m.insights.coverageRisk(c.handle, m.labels.coverageStates[g.coverageState].toLowerCase(), n0(g.postsNeeded), g.firstUncoveredSlot ? dt(g.firstUncoveredSlot) : null),
-        accountId: c.accountId,
-        evidence: { values: { coverageState: g.coverageState, postsNeeded: g.postsNeeded, coveredDays: g.coveredDays } },
-      });
-    }
+    // Queue depth is not a report finding: the calendar raises "tomorrow has no post" in real time.
   }
   if (facts.totals.failedPosts === 0 && facts.totals.postsPublished > 0) {
     wentWell.push({ id: "no_failures", text: m.insights.noFailures(n0(facts.totals.postsPublished)), accountId: null, evidence: { values: { posts: facts.totals.postsPublished, failed: 0 } } });
@@ -256,18 +249,6 @@ export function composeReport(facts: ReportFacts): WeeklyReportContent {
   }
   for (const c of facts.consistency) {
     if (c.failedCount > 0) addAction("fix_publish_failures", "high", c.accountId, m.actions.fix_publish_failures(c.handle, c.failedCount));
-  }
-  for (const c of facts.consistency) {
-    const g = c.atGeneration;
-    if (g.isDisconnected || g.freshness !== "fresh") continue;
-    if (g.coverageState === "critical" || g.coverageState === "empty" || g.coverageState === "warning") {
-      addAction(
-        "replenish_queue",
-        g.coverageState === "warning" ? "medium" : "high",
-        c.accountId,
-        m.actions.replenish_queue(c.handle, n0(g.postsNeeded), g.firstUncoveredSlot ? dt(g.firstUncoveredSlot) : null, g.coveredDays === null ? null : n1(g.coveredDays)),
-      );
-    }
   }
   for (const c of facts.consistency) {
     if (!c.atGeneration.isDisconnected && c.atGeneration.freshness !== "fresh" && c.cadenceMode !== "paused") addAction("resolve_sync", "medium", c.accountId, m.actions.resolve_sync(c.handle));

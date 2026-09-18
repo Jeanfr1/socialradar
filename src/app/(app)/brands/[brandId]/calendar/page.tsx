@@ -1,204 +1,227 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarItem, CalendarLegend, CellContent } from "@/components/calendar/CalendarParts";
-import { Card, CardTitle, PageHeader } from "@/components/ui/Card";
-import { Freshness } from "@/components/ui/Freshness";
-import { Banner, EmptyState, ErrorBanner } from "@/components/ui/States";
+import { PlatformTag } from "@/components/app/bits";
+import { Icon } from "@/components/ui/Icon";
 import { requireUser } from "@/server/auth/authz";
 import { getDb } from "@/server/db/client";
-import { loadCalendar } from "@/server/queries/pages/calendar";
-import { oneOf, orNotFound, param, type SearchParams } from "@/server/queries/pages/guard";
+import { orNotFound, param, type SearchParams } from "@/server/queries/pages/guard";
+import { loadCalendar, type CalendarAlertVM, type CalendarDayVM, type CalendarPostStatus, type CalendarPostVM } from "@/server/queries/pages/workspace";
 
-export const metadata: Metadata = { title: "Calendário de conteúdo" };
+export const metadata: Metadata = { title: "Calendário" };
+
+const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const MAX_IN_CELL = 4;
+
+const STATUS: Record<CalendarPostStatus, { label: string; mark: string; className: string }> = {
+  published: { label: "Publicado", mark: "●", className: "text-ink" },
+  scheduled: { label: "Agendado", mark: "○", className: "text-accent" },
+  approval: { label: "Aguardando aprovação", mark: "◐", className: "text-warning" },
+  failed: { label: "Falhou", mark: "✕", className: "text-critical" },
+};
+
+function PostChip({ post }: { post: CalendarPostVM }) {
+  const s = STATUS[post.status];
+  const content = (
+    <>
+      <span aria-hidden="true" className={`w-3 text-center text-[11px] leading-none ${s.className}`}>
+        {s.mark}
+      </span>
+      <span className={`tabular-nums ${post.status === "published" ? "text-ink-2" : "text-ink"}`}>{post.time}</span>
+      <PlatformTag platform={post.platform} className="ml-auto" />
+      <span className="sr-only">
+        {s.label} em @{post.handle}
+        {post.title ? `: ${post.title}` : ""}
+      </span>
+    </>
+  );
+  const tip = [`${s.label} · @${post.handle}`, post.title].filter(Boolean).join("\n");
+  return (
+    <li title={tip}>
+      {post.url ? (
+        <a href={post.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded px-1 py-0.5 text-[12px] hover:bg-canvas">
+          {content}
+        </a>
+      ) : (
+        <span className="flex items-center gap-1.5 px-1 py-0.5 text-[12px]">{content}</span>
+      )}
+    </li>
+  );
+}
+
+function DayCell({ day }: { day: CalendarDayVM }) {
+  const extra = day.posts.length - MAX_IN_CELL;
+  return (
+    <div
+      className={`min-h-[118px] border-b border-r border-line p-1.5 ${!day.inMonth ? "bg-canvas/60" : day.isPast ? "bg-canvas/30" : "bg-surface"} ${
+        day.isGap ? "relative ring-2 ring-inset ring-critical/70" : ""
+      }`}
+    >
+      <div className="mb-1 flex items-center justify-between px-1">
+        <span
+          className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs ${
+            day.isToday ? "bg-accent px-1.5 font-semibold text-white" : day.inMonth ? "text-ink" : "text-ink-2/60"
+          }`}
+        >
+          {day.day}
+        </span>
+        {day.isGap ? <span className="text-[11px] font-semibold text-critical">sem post</span> : null}
+      </div>
+      {day.posts.length > 0 ? (
+        <ul className="space-y-0.5">
+          {day.posts.slice(0, MAX_IN_CELL).map((p) => (
+            <PostChip key={p.id} post={p} />
+          ))}
+          {extra > 0 ? <li className="px-1 text-[11px] text-ink-2">+{extra} {extra === 1 ? "post" : "posts"}</li> : null}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function AlertCard({ alert }: { alert: CalendarAlertVM }) {
+  const critical = alert.kind === "next_day_gap";
+  return (
+    <div role={critical ? "alert" : "status"} className={`flex gap-3 rounded-xl border p-3.5 ${critical ? "border-critical/30 bg-[#fdf1f0]" : "border-warning/30 bg-[#fff6eb]"}`}>
+      <Icon name={critical ? "alert-octagon" : "alert-triangle"} className={`mt-0.5 h-5 w-5 shrink-0 ${critical ? "text-critical" : "text-warning"}`} />
+      <div className="min-w-0">
+        <p className="font-semibold text-ink">{alert.title}</p>
+        <p className="text-sm text-ink-2">{alert.detail}</p>
+      </div>
+      <PlatformTag platform={alert.platform} className="ml-auto mt-0.5 shrink-0" />
+    </div>
+  );
+}
 
 export default async function CalendarPage({ params, searchParams }: { params: Promise<{ brandId: string }>; searchParams: Promise<SearchParams> }) {
   const { brandId } = await params;
   const sp = await searchParams;
   const user = await requireUser("page");
-  const view = oneOf(param(sp, "view"), ["month", "week"] as const, "month");
-  const vm = await orNotFound(loadCalendar(getDb(), user, brandId, new Date(), { view, anchor: param(sp, "date"), accountId: param(sp, "account") }));
+  const vm = await orNotFound(loadCalendar(getDb(), user, brandId, { month: param(sp, "mes"), accountId: param(sp, "conta") }, new Date()));
   const base = `/brands/${vm.brand.id}/calendar`;
-  const href = (next: { view?: string; date?: string; account?: string | null }) => {
+  const href = (month: string | null, account: string | null) => {
     const q = new URLSearchParams();
-    q.set("view", next.view ?? vm.view);
-    q.set("date", next.date ?? vm.anchor);
-    const account = next.account === undefined ? vm.accountFilter : next.account;
-    if (account) q.set("account", account);
-    return `${base}?${q.toString()}`;
+    if (month) q.set("mes", month);
+    if (account) q.set("conta", account);
+    const s = q.toString();
+    return s ? `${base}?${s}` : base;
   };
-  const scopeName = vm.accountFilter ? `@${vm.accounts.find((a) => a.id === vm.accountFilter)?.handle.replace(/^@/, "") ?? "esta conta"}` : vm.brand.name;
+  const days = vm.weeks.flat();
+  const agenda = days.filter((d) => d.inMonth && (d.posts.length > 0 || d.isToday || d.isGap));
+  const navBtn = "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-surface text-ink-2 hover:text-ink";
 
   return (
-    <>
-      <PageHeader
-        title="Calendário de conteúdo"
-        subtitle={`Posts agendados e publicados com os horários previstos da cadência. Horários em ${vm.brand.timezone} (${vm.brand.zone}).`}
-        meta={<Freshness vm={vm.freshness} />}
-      />
+    <div className="space-y-5">
+      <h1 className="sr-only">Calendário de postagens de {vm.brand.name}</h1>
 
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href={href({ date: vm.prevAnchor })} className="btn btn-secondary" aria-label={vm.view === "month" ? "Mês anterior" : "Semana anterior"}>
-            ‹ Anterior
-          </Link>
-          <Link href={href({ date: vm.todayAnchor })} className="btn btn-secondary">
-            Hoje
-          </Link>
-          <Link href={href({ date: vm.nextAnchor })} className="btn btn-secondary" aria-label={vm.view === "month" ? "Próximo mês" : "Próxima semana"}>
-            Próximo ›
-          </Link>
-          <h2 className="ml-1 text-lg font-semibold" aria-live="polite">
-            {vm.title}
-          </h2>
+      {vm.alerts.length > 0 ? (
+        <div className="space-y-2">
+          {vm.alerts.map((a) => (
+            <AlertCard key={`${a.kind}:${a.accountId}`} alert={a} />
+          ))}
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div role="group" aria-label="Visualização do calendário" className="flex gap-1">
-            {(["month", "week"] as const).map((v) => (
-              <Link key={v} href={href({ view: v })} aria-current={v === vm.view ? "true" : undefined} className={`btn ${v === vm.view ? "btn-primary" : "btn-secondary"}`}>
-                {v === "month" ? "Mês" : "Semana"}
+      ) : (
+        <p className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink-2">
+          <Icon name="check-circle" className="h-5 w-5 text-healthy" />
+          Tudo em dia: todas as contas que postam hoje já têm post agendado para amanhã.
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Link href={href(vm.month.prevKey, vm.selectedAccountId)} className={navBtn} aria-label="Mês anterior">
+            ‹
+          </Link>
+          <h2 className="min-w-[10.5rem] text-center text-lg font-semibold text-ink">{vm.month.label}</h2>
+          <Link href={href(vm.month.nextKey, vm.selectedAccountId)} className={navBtn} aria-label="Próximo mês">
+            ›
+          </Link>
+          {!vm.month.isCurrent ? (
+            <Link href={href(null, vm.selectedAccountId)} className="ml-1 rounded-lg px-2 py-1 text-sm text-accent hover:bg-accent-soft">
+              Hoje
+            </Link>
+          ) : null}
+        </div>
+        {vm.accounts.length > 1 ? (
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por conta">
+            <Link
+              href={href(vm.month.key, null)}
+              aria-current={vm.selectedAccountId === null ? "true" : undefined}
+              className={`rounded-full border px-3 py-1 text-sm ${vm.selectedAccountId === null ? "border-ink bg-ink text-white" : "border-line bg-surface text-ink-2 hover:text-ink"}`}
+            >
+              Todas
+            </Link>
+            {vm.accounts.map((a) => (
+              <Link
+                key={a.id}
+                href={href(vm.month.key, a.id)}
+                aria-current={vm.selectedAccountId === a.id ? "true" : undefined}
+                className={`inline-flex items-center gap-1.5 rounded-full border py-1 pl-1.5 pr-3 text-sm ${
+                  vm.selectedAccountId === a.id ? "border-ink bg-ink text-white" : "border-line bg-surface text-ink-2 hover:text-ink"
+                }`}
+              >
+                <PlatformTag platform={a.platform} />
+                <span className="max-w-[10rem] truncate">{a.handle}</span>
               </Link>
             ))}
           </div>
-          <form method="get" action={base} className="flex items-end gap-2">
-            <input type="hidden" name="view" value={vm.view} />
-            <input type="hidden" name="date" value={vm.anchor} />
-            <div>
-              <label htmlFor="cal-account" className="label text-xs">
-                Conta
-              </label>
-              <select id="cal-account" name="account" defaultValue={vm.accountFilter ?? ""} className="input">
-                <option value="">Todas as contas</option>
-                {vm.accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    @{a.handle.replace(/^@/, "")} ({a.platformLabel})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button type="submit" className="btn btn-secondary">
-              Aplicar
-            </button>
-          </form>
-        </div>
+        ) : null}
       </div>
 
-      {vm.error ? <ErrorBanner message={vm.error} retryHref={href({})} /> : null}
-      {vm.freshness.level !== "fresh" ? <Banner tone="stale">{vm.freshness.label} — conteúdo agendado no Buffer desde então ainda não aparece aqui.</Banner> : null}
-      {vm.upcomingEmpty ? (
-        <Banner tone="warning" role="status">
-          Nenhum conteúdo agendado encontrado para {scopeName} nesta visualização.
-        </Banner>
-      ) : null}
-      {vm.accounts.filter((a) => a.unavailable).length ? (
-        <div className="hatch-unavailable mb-3 rounded-lg border border-locked/30 p-2">
-          <ul className="rounded bg-surface/95 p-2 text-sm">
-            {vm.accounts
-              .filter((a) => a.unavailable)
-              .map((a) => (
-                <li key={a.id}>
-                  <strong>@{a.handle.replace(/^@/, "")}</strong> ({a.platformLabel}): {a.unavailable}. Uma faixa vazia aqui não significa &ldquo;sem posts&rdquo;.
-                </li>
-              ))}
-          </ul>
+      {/* Month grid (tablet and desktop) */}
+      <div className="hidden overflow-hidden rounded-xl border-l border-t border-line md:block">
+        <div className="grid grid-cols-7 border-b border-line bg-canvas">
+          {WEEKDAYS.map((w) => (
+            <div key={w} className="border-r border-line px-2 py-1.5 text-xs font-medium text-ink-2">
+              {w}
+            </div>
+          ))}
         </div>
-      ) : null}
-
-      <CalendarLegend />
-
-      {vm.accounts.length === 0 ? (
-        <EmptyState title="Nenhuma conta está mapeada para esta marca ainda." />
-      ) : vm.view === "month" ? (
-        <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-          <table className="w-full min-w-[760px] table-fixed text-left">
-            <caption className="sr-only">
-              Calendário de {vm.title} para {scopeName}
-            </caption>
-            <thead>
-              <tr>
-                {vm.weekdays.map((d) => (
-                  <th key={d} scope="col" className="border-b border-line px-2 py-2 text-xs font-semibold text-ink-2">
-                    {d}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {vm.weeks.map((week) => (
-                <tr key={week[0]!.key}>
-                  {week.map((cell) => (
-                    <td key={cell.key} className={`border border-line align-top ${cell.inMonth ? "" : "bg-canvas"}`}>
-                      <div className={`px-1 pt-1 text-xs ${cell.isToday ? "font-bold text-accent" : cell.inMonth ? "text-ink" : "text-ink-2"}`}>
-                        <span className="sr-only">{cell.label}</span>
-                        <span aria-hidden>{cell.dayNum}</span>
-                        {cell.isToday ? <span className="ml-1">Hoje</span> : null}
-                      </div>
-                      <CellContent cell={cell} showHandles={!vm.accountFilter} maxItems={4} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-          <table className="w-full min-w-[900px] table-fixed text-left">
-            <caption className="sr-only">
-              {vm.title}: uma faixa por conta para {scopeName}
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col" className="w-36 border-b border-line px-2 py-2 text-xs font-semibold text-ink-2">
-                  Conta
-                </th>
-                {vm.lanes[0]?.cells.map((c) => (
-                  <th key={c.key} scope="col" className={`border-b border-line px-2 py-2 text-xs font-semibold ${c.isToday ? "text-accent" : "text-ink-2"}`}>
-                    {c.label}
-                    {c.isToday ? " · Hoje" : ""}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {vm.lanes.map((lane) => (
-                <tr key={lane.accountId}>
-                  <th scope="row" className="border border-line p-2 align-top text-sm font-medium">
-                    @{lane.handle.replace(/^@/, "")}
-                    <div className="text-xs font-normal text-ink-2">{lane.platformLabel}</div>
-                  </th>
-                  {lane.unavailable ? (
-                    <td colSpan={lane.cells.length} className="hatch-unavailable border border-line p-2 align-middle">
-                      <span className="rounded bg-surface px-2 py-1 text-sm font-medium text-locked">{lane.unavailable}</span>
-                    </td>
-                  ) : (
-                    lane.cells.map((cell) => (
-                      <td key={cell.key} className="border border-line align-top">
-                        <CellContent cell={cell} showHandles={false} />
-                      </td>
-                    ))
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <Card labelledBy="unconfirmed" className="mt-4">
-        <CardTitle id="unconfirmed">Horário não confirmado</CardTitle>
-        <p className="mb-2 text-xs text-ink-2">Rascunhos, posts aguardando aprovação e posts sem horário de publicação definido. Eles nunca contam como cobertura.</p>
-        {vm.unconfirmed.length === 0 ? (
-          <p className="text-sm text-ink-2">Nenhum post pendente sem horário confirmado.</p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            {vm.unconfirmed.map((i) => (
-              <li key={i.id}>
-                <CalendarItem item={i} showHandle />
-              </li>
+        {vm.weeks.map((week) => (
+          <div key={week[0]!.date} className="grid grid-cols-7">
+            {week.map((d) => (
+              <DayCell key={d.date} day={d} />
             ))}
-          </ul>
-        )}
-      </Card>
-    </>
+          </div>
+        ))}
+      </div>
+
+      {/* Agenda (phones) */}
+      <ol className="space-y-3 md:hidden">
+        {agenda.length === 0 ? <li className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-2">Nenhum post neste mês.</li> : null}
+        {agenda.map((d) => (
+          <li key={d.date} className={`rounded-xl border bg-surface p-3 ${d.isGap ? "border-critical/60" : "border-line"}`}>
+            <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-ink">
+              {d.weekday}, {d.day}
+              {d.isToday ? <span className="rounded-full bg-accent px-2 text-[11px] font-semibold text-white">hoje</span> : null}
+              {d.isGap ? <span className="text-xs font-semibold text-critical">sem post agendado</span> : null}
+            </p>
+            {d.posts.length > 0 ? (
+              <ul className="space-y-0.5">
+                {d.posts.map((p) => (
+                  <PostChip key={p.id} post={p} />
+                ))}
+              </ul>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-ink-2">
+        <div className="flex flex-wrap gap-3">
+          {(["published", "scheduled", "approval", "failed"] as const).map((s) => (
+            <span key={s} className="inline-flex items-center gap-1">
+              <span aria-hidden="true" className={STATUS[s].className}>
+                {STATUS[s].mark}
+              </span>
+              {STATUS[s].label}
+            </span>
+          ))}
+        </div>
+        <span>
+          {vm.totals.published} publicados · {vm.totals.scheduled} agendados neste mês
+          {vm.lastSync ? ` · atualizado ${vm.lastSync}` : ""}
+        </span>
+      </div>
+    </div>
   );
 }

@@ -139,7 +139,7 @@ export const DEFAULT_POSTING_SCHEDULE: z.output<typeof postingScheduleObject> = 
   horizonDays: 14,
   warningDays: 7,
   criticalDays: 3,
-  staleAfterMinutes: 360,
+  staleAfterMinutes: 1560,
 };
 
 // ---------------------------------------------------------------------------

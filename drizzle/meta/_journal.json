@@ -29,6 +29,13 @@
       "when": 1789732569237,
       "tag": "0003_report_period_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789733041319,
+      "tag": "0004_daily_sync_staleness",
+      "breakpoints": true
     }
   ]
 }

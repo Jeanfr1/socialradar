@@ -275,7 +275,7 @@ export const postingSchedules = pgTable("posting_schedules", {
   warningDays: integer("warning_days").notNull().default(7),
   criticalDays: integer("critical_days").notNull().default(3),
   /** Minutes after which synchronized queue data is considered stale. */
-  staleAfterMinutes: integer("stale_after_minutes").notNull().default(360),
+  staleAfterMinutes: integer("stale_after_minutes").notNull().default(1560),
   updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: updatedAt(),
 });

@@ -13,7 +13,7 @@ import { getDb } from "@/server/db/client";
 import { orNotFound } from "@/server/queries/pages/guard";
 import { loadReportView } from "@/server/queries/pages/reports";
 
-export const metadata: Metadata = { title: "Relatório semanal" };
+export const metadata: Metadata = { title: "Relatório" };
 
 export default async function ReportPage({ params }: { params: Promise<{ brandId: string; reportId: string }> }) {
   const { brandId, reportId } = await params;
@@ -26,12 +26,12 @@ export default async function ReportPage({ params }: { params: Promise<{ brandId
   return (
     <>
       <p className="mb-2 text-sm">
-        <Link href={base} className="link">
+        <Link href={`${base}?tipo=${r.kind === "month" ? "mensal" : "semanal"}`} className="link">
           ← Todos os relatórios
         </Link>
       </p>
       <PageHeader
-        title={`Relatório semanal: ${r.weekLabel}`}
+        title={`Relatório ${r.kind === "month" ? "mensal" : "semanal"}: ${r.weekLabel}`}
         meta={
           <>
             <Pill tone={r.status === "final" ? "healthy" : r.status === "preliminary" ? "stale" : r.status === "failed" ? "critical" : "neutral"}>{r.statusLabel}</Pill>
@@ -73,7 +73,7 @@ export default async function ReportPage({ params }: { params: Promise<{ brandId
       ) : null}
       {r.status === "failed" ? (
         <Banner tone="error" role="alert">
-          Não foi possível gerar o relatório desta semana por completo.{r.errorMessage ? ` ${r.errorMessage}` : ""} {vm.content ? "O relatório parcial é exibido abaixo." : ""} Fale com o suporte se isso continuar acontecendo.
+          Não foi possível gerar este relatório por completo.{r.errorMessage ? ` ${r.errorMessage}` : ""} {vm.content ? "O relatório parcial é exibido abaixo." : ""} Fale com o suporte se isso continuar acontecendo.
         </Banner>
       ) : null}
       {r.status === "generating" ? <Banner tone="info">Esta versão ainda está sendo gerada. Atualize a página em um minuto.</Banner> : null}

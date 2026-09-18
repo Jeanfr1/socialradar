@@ -70,7 +70,7 @@ function cellOf(m: Messages, c: FactCell): MetricCell {
 export function composeReport(facts: ReportFacts): WeeklyReportContent {
   const locale: ReportLocale = facts.brand.locale;
   const tz = facts.brand.timezone;
-  const m = messages(locale);
+  const m = messages(locale, facts.period.kind ?? "week");
   const n0 = (v: number) => fmtNumber(locale, v, 0);
   const n1 = (v: number) => fmtNumber(locale, v, 1);
   const pct = (v: number) => fmtPct(locale, v, 1);

@@ -15,8 +15,12 @@
  */
 import { DateTime } from "luxon";
 
+/** Reporting granularity. Absent on a period means "week" (backward compatible). */
+export type PeriodKind = "week" | "month";
+
 export interface WeekPeriod {
   timezone: string;
+  kind?: PeriodKind;
   /** Local Monday, YYYY-MM-DD. */
   start: string;
   /** Local Sunday (inclusive), YYYY-MM-DD. */
@@ -62,6 +66,7 @@ function weekFromLocalMonday(monday: DateTime, tz: string): WeekPeriod {
     end: sunday.toISODate() as string,
     startUtc: start.toJSDate(),
     endUtcExclusive: next.toJSDate(),
+    kind: "week",
   };
 }
 
@@ -142,4 +147,64 @@ export function nextReportRunAt(now: Date, tz: string, schedule: ReportSchedule)
   }
   /* c8 ignore next */
   throw new Error("nextReportRunAt: no candidate found (unreachable)");
+}
+
+// ---------------------------------------------------------------------------
+// Calendar months (same shape as weeks, so reports and metrics can use either)
+// ---------------------------------------------------------------------------
+function monthFromLocalDate(anyDay: DateTime, tz: string): WeekPeriod {
+  const start = DateTime.fromObject({ year: anyDay.year, month: anyDay.month, day: 1 }, { zone: tz });
+  const nextFirst = start.plus({ months: 1 });
+  const next = DateTime.fromObject({ year: nextFirst.year, month: nextFirst.month, day: 1 }, { zone: tz });
+  return {
+    timezone: tz,
+    kind: "month",
+    start: start.toISODate() as string,
+    end: next.minus({ days: 1 }).toISODate() as string,
+    startUtc: start.toJSDate(),
+    endUtcExclusive: next.toJSDate(),
+  };
+}
+
+/** The (possibly incomplete) calendar month that contains `at`, in local time. */
+export function monthContaining(at: Date, tz: string): WeekPeriod {
+  assertValidTimezone(tz);
+  return monthFromLocalDate(DateTime.fromJSDate(at, { zone: tz }), tz);
+}
+
+/** The most recent fully elapsed calendar month, in local time. */
+export function previousCompleteMonth(now: Date, tz: string): WeekPeriod {
+  return periodBefore(monthContaining(now, tz));
+}
+
+export function periodContaining(kind: PeriodKind, at: Date, tz: string): WeekPeriod {
+  return kind === "month" ? monthContaining(at, tz) : weekContaining(at, tz);
+}
+
+export function previousCompletePeriod(kind: PeriodKind, now: Date, tz: string): WeekPeriod {
+  return periodBefore(periodContaining(kind, now, tz));
+}
+
+/** The period immediately before `period` (same kind and timezone). */
+export function periodBefore(period: WeekPeriod): WeekPeriod {
+  if (period.kind !== "month") return weekBefore(period);
+  return monthFromLocalDate(DateTime.fromISO(period.start, { zone: period.timezone }).minus({ months: 1 }), period.timezone);
+}
+
+/** The period immediately after `period` (same kind and timezone). */
+export function periodAfter(period: WeekPeriod): WeekPeriod {
+  if (period.kind !== "month") return weekAfter(period);
+  return monthFromLocalDate(DateTime.fromISO(period.start, { zone: period.timezone }).plus({ months: 1 }), period.timezone);
+}
+
+/** `n` consecutive periods ENDING WITH `period` (inclusive), oldest first. */
+export function rollingPeriods(period: WeekPeriod, n: number): WeekPeriod[] {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`rollingPeriods: n must be a non-negative integer, got ${n}`);
+  const out: WeekPeriod[] = [];
+  let cursor = period;
+  for (let i = 0; i < n; i++) {
+    out.push(cursor);
+    cursor = periodBefore(cursor);
+  }
+  return out.reverse();
 }

@@ -26,6 +26,7 @@
  * otherwise alerts of other scopes would be auto-resolved.
  */
 import { DateTime } from "luxon";
+import { evaluateNextDayGap, type DayPost } from "./next-day-gap";
 import type { CoverageResult, Platform } from "./types";
 
 export type AlertType =
@@ -37,7 +38,8 @@ export type AlertType =
   | "publish_failed"
   | "post_overdue"
   | "unresolved_times"
-  | "connection_failing";
+  | "connection_failing"
+  | "next_day_gap";
 
 export type AlertSeverity = "info" | "warning" | "critical";
 
@@ -340,4 +342,41 @@ export function resolveMissing(openDedupeKeys: Iterable<string>, candidates: Ale
   const out: string[] = [];
   for (const key of openDedupeKeys) if (!active.has(key) && !out.includes(key)) out.push(key);
   return out;
+}
+
+/** Data older than this cannot confirm tomorrow is empty (the queue syncs once a day). */
+export const NEXT_DAY_GAP_MAX_DATA_AGE_HOURS = 26;
+
+/**
+ * The user-facing queue alert: critical when the account posts today and has nothing scheduled for tomorrow.
+ * Suppressed when the queue data is too old to confirm it.
+ */
+export function evaluateNextDayGapAlert(input: {
+  accountId: string;
+  brandId: string;
+  handle: string;
+  platform: Platform;
+  timezone: string;
+  now: Date;
+  lastQueueSyncAt: Date | null;
+  posts: DayPost[];
+}): AlertCandidate[] {
+  if (!input.lastQueueSyncAt || input.now.getTime() - input.lastQueueSyncAt.getTime() > NEXT_DAY_GAP_MAX_DATA_AGE_HOURS * HOUR_MS) return [];
+  const r = evaluateNextDayGap({ now: input.now, timezone: input.timezone, posts: input.posts });
+  if (!r.isGap) return [];
+  const who = `@${input.handle.replace(/^@/, "")} (${PLATFORM_LABEL[input.platform]})`;
+  const tomorrowLabel = DateTime.fromISO(r.tomorrow, { zone: input.timezone }).setLocale("pt-BR").toFormat("cccc, dd/LL");
+  return [
+    {
+      dedupeKey: `next_day_gap:${input.accountId}`,
+      type: "next_day_gap",
+      severity: "critical",
+      title: `Amanhã (${tomorrowLabel}) não há post agendado em ${who}`,
+      evidence: { accountId: input.accountId, today: r.today, tomorrow: r.tomorrow, postsToday: r.postsToday, scheduledTomorrow: r.scheduledTomorrow, lastQueueSyncAt: iso(input.lastQueueSyncAt) },
+      suggestedAction: `Agende pelo menos um post em ${who} para ${tomorrowLabel}.`,
+      brandId: input.brandId,
+      socialAccountId: input.accountId,
+      connectionId: null,
+    },
+  ];
 }

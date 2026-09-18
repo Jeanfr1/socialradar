@@ -384,7 +384,9 @@ export interface WeeklyReportContent {
   timezone: string;
   brand: { id: string; name: string };
   period: {
-    /** Local Monday / Sunday (inclusive) YYYY-MM-DD in `timezone`. */
+    /** "week" (Monday–Sunday) or "month" (calendar month). Absent in reports generated before monthly support. */
+    kind?: "week" | "month";
+    /** Local first / last day (inclusive) YYYY-MM-DD in `timezone`. */
     start: string;
     end: string;
     startUtc: string;

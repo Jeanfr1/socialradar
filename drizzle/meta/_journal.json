@@ -22,6 +22,13 @@
       "when": 1789324907764,
       "tag": "0002_hardening_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789732569237,
+      "tag": "0003_report_period_kind",
+      "breakpoints": true
     }
   ]
 }

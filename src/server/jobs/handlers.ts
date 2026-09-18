@@ -45,7 +45,11 @@ export const jobHandlers: Record<string, JobHandler> = {
   },
   [JOB_KINDS.weeklyReport]: async (job, db) => {
     const { runScheduledWeeklyReport } = await import("@/server/reports/service");
-    await runScheduledWeeklyReport(db, { brandId: payloadString(job, "brandId"), periodStart: payloadString(job, "periodStart") }, new Date());
+    await runScheduledWeeklyReport(
+      db,
+      { brandId: payloadString(job, "brandId"), periodStart: payloadString(job, "periodStart"), kind: job.payload.kind === "month" ? "month" : "week" },
+      new Date(),
+    );
   },
   [JOB_KINDS.generateRecommendations]: async (job, db) => {
     const { generateRecommendationsForConnection } = await import("@/server/insights/service");

@@ -904,8 +904,98 @@ const esES: Messages = {
 
 const CATALOG: Record<ReportLocale, Messages> = { "pt-BR": ptBR, "en-US": enUS, "es-ES": esES };
 
-export function messages(locale: ReportLocale): Messages {
-  return CATALOG[locale];
+/**
+ * Monthly wording is derived from the weekly catalog by ordered, grammar-aware replacements
+ * (Portuguese/Spanish "semana" is feminine, "mês/mes" masculine), so the three catalogs stay single-sourced.
+ * Longer phrases come first so agreement words ("na", "da", "durante a", "completas") change together.
+ */
+const MONTH_REPLACEMENTS: Record<ReportLocale, [string, string][]> = {
+  "pt-BR": [
+    ["Relatório semanal", "Relatório mensal"],
+    ["Semana anterior", "Mês anterior"],
+    ["Semana de ", "Mês de "],
+    ["das duas semanas", "dos dois meses"],
+    ["todas as semanas", "todos os meses"],
+    ["semanas completas", "meses completos"],
+    ["semanas anteriores", "meses anteriores"],
+    ["na próxima semana", "no próximo mês"],
+    ["da próxima semana", "do próximo mês"],
+    ["durante a semana", "durante o mês"],
+    ["em cada semana", "em cada mês"],
+    ["por semana", "por mês"],
+    ["semana anterior", "mês anterior"],
+    ["da semana", "do mês"],
+    ["na semana", "no mês"],
+    ["Variação semanal", "Variação mensal"],
+    ["Comparação semanal", "Comparação mensal"],
+    ["variação semanal", "variação mensal"],
+    ["comparação semanal", "comparação mensal"],
+    ["semanas", "meses"],
+    ["Semana", "Mês"],
+    ["semana", "mês"],
+  ],
+  "es-ES": [
+    ["Informe semanal", "Informe mensual"],
+    ["Semana anterior", "Mes anterior"],
+    ["Semana del", "Mes del"],
+    ["de ambas semanas", "de ambos meses"],
+    ["semanas completas", "meses completos"],
+    ["semanas anteriores", "meses anteriores"],
+    ["a la semana anterior", "al mes anterior"],
+    ["la próxima semana", "el próximo mes"],
+    ["durante la semana", "durante el mes"],
+    ["esta semana", "este mes"],
+    ["de la semana", "del mes"],
+    ["cada semana", "cada mes"],
+    ["por semana", "por mes"],
+    ["semana anterior", "mes anterior"],
+    ["Variación semanal", "Variación mensual"],
+    ["Comparación semanal", "Comparación mensual"],
+    ["variación semanal", "variación mensual"],
+    ["comparación semanal", "comparación mensual"],
+    ["semanas", "meses"],
+    ["Semana", "Mes"],
+    ["semana", "mes"],
+  ],
+  "en-US": [
+    ["Weekly", "Monthly"],
+    ["weekly", "monthly"],
+    ["Weeks", "Months"],
+    ["weeks", "months"],
+    ["Week", "Month"],
+    ["week", "month"],
+  ],
+};
+
+function toMonthWording(locale: ReportLocale, text: string): string {
+  let out = text;
+  for (const [from, to] of MONTH_REPLACEMENTS[locale]) out = out.split(from).join(to);
+  return out;
+}
+
+function monthify<T>(value: T, locale: ReportLocale): T {
+  if (typeof value === "string") return toMonthWording(locale, value) as T;
+  if (typeof value === "function") {
+    const fn = value as unknown as (...args: unknown[]) => unknown;
+    return ((...args: unknown[]) => monthify(fn(...args), locale)) as unknown as T;
+  }
+  if (Array.isArray(value)) return value.map((v) => monthify(v, locale)) as unknown as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, monthify(v, locale)])) as T;
+  }
+  return value;
+}
+
+const MONTH_CATALOG = new Map<ReportLocale, Messages>();
+
+export function messages(locale: ReportLocale, kind: "week" | "month" = "week"): Messages {
+  if (kind === "week") return CATALOG[locale];
+  let monthly = MONTH_CATALOG.get(locale);
+  if (!monthly) {
+    monthly = monthify(CATALOG[locale], locale);
+    MONTH_CATALOG.set(locale, monthly);
+  }
+  return monthly;
 }
 
 export function statusLabel(locale: ReportLocale, status: CellStatus): string {

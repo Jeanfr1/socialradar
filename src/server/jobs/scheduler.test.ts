@@ -15,24 +15,26 @@ beforeEach(async () => {
 });
 
 const OPTS = { queueBaseMinutes: 120, publishedHours: 24, alertsEveryMinutes: 15 };
+const weekly = (keys: string[]) => keys.filter((k) => k.startsWith("report.weekly:"));
+const monthly = (keys: string[]) => keys.filter((k) => k.startsWith("report.monthly:"));
 
 describe("weekly report scheduling", () => {
   it("enqueues the previous week's report at Monday 08:00 brand time, once", async () => {
     const [brand] = await db.insert(brands).values({ name: "B", slug: "b", timezone: "America/Sao_Paulo" }).returning();
     // Monday 2026-09-14 07:59 in São Paulo = 10:59 UTC.
-    expect(await scheduleWeeklyReports(db, new Date("2026-09-14T10:59:00Z"))).toEqual([]);
+    expect(weekly(await scheduleWeeklyReports(db, new Date("2026-09-14T10:59:00Z")))).toEqual([]);
     const due = new Date("2026-09-14T11:00:00Z");
-    expect(await scheduleWeeklyReports(db, due)).toEqual([`report.weekly:${brand!.id}:2026-09-07`]);
+    expect(weekly(await scheduleWeeklyReports(db, due))).toEqual([`report.weekly:${brand!.id}:2026-09-07`]);
     expect(await scheduleWeeklyReports(db, due)).toEqual([]);
-    const queued = await db.select().from(jobs);
+    const queued = (await db.select().from(jobs)).filter((j) => j.dedupeKey?.startsWith("report.weekly:"));
     expect(queued).toHaveLength(1);
-    expect(queued[0]!.payload).toEqual({ brandId: brand!.id, periodStart: "2026-09-07" });
+    expect(queued[0]!.payload).toEqual({ brandId: brand!.id, periodStart: "2026-09-07", kind: "week" });
   });
 
   it("catches up after downtime and skips periods that already have a scheduled report", async () => {
     const [brand] = await db.insert(brands).values({ name: "B", slug: "b2", timezone: "Europe/Paris" }).returning();
     const wednesday = new Date("2026-09-16T12:00:00Z");
-    expect(await scheduleWeeklyReports(db, wednesday)).toHaveLength(1);
+    expect(weekly(await scheduleWeeklyReports(db, wednesday))).toHaveLength(1);
     await db.delete(jobs);
     await db.insert(reportVersions).values({
       brandId: brand!.id,
@@ -44,7 +46,18 @@ describe("weekly report scheduling", () => {
       locale: "pt-BR",
       timezone: "Europe/Paris",
     });
-    expect(await scheduleWeeklyReports(db, wednesday)).toEqual([]);
+    expect(weekly(await scheduleWeeklyReports(db, wednesday))).toEqual([]);
+  });
+
+  it("enqueues the previous calendar month on the 1st at the report time, once, independent of the weekly report", async () => {
+    const [brand] = await db.insert(brands).values({ name: "B", slug: "bm", timezone: "America/Sao_Paulo" }).returning();
+    // Thursday 2026-10-01 07:59 in São Paulo = 10:59 UTC: September is not due yet.
+    expect(monthly(await scheduleWeeklyReports(db, new Date("2026-10-01T10:59:00Z")))).toEqual([]);
+    const due = new Date("2026-10-01T11:00:00Z");
+    expect(monthly(await scheduleWeeklyReports(db, due))).toEqual([`report.monthly:${brand!.id}:2026-09-01`]);
+    expect(monthly(await scheduleWeeklyReports(db, due))).toEqual([]);
+    const job = (await db.select().from(jobs)).find((j) => j.dedupeKey === `report.monthly:${brand!.id}:2026-09-01`);
+    expect(job?.payload).toEqual({ brandId: brand!.id, periodStart: "2026-09-01", kind: "month" });
   });
 
   it("respects disabled schedules", async () => {

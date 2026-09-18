@@ -23,14 +23,15 @@ async function main() {
     if (!job) break;
     const brandId = String(job.payload.brandId);
     const periodStart = String(job.payload.periodStart);
+    const kind = job.payload.kind === "month" ? "month" : "week";
     try {
-      const report = await runScheduledWeeklyReport(db, { brandId, periodStart }, new Date());
+      const report = await runScheduledWeeklyReport(db, { brandId, periodStart, kind }, new Date());
       await completeJob(db, job);
-      console.log(`Brand ${brandId} · week ${periodStart}: v${report.version} ${report.status}${report.isPreliminary ? " (preliminary)" : ""}`);
+      console.log(`Brand ${brandId} · ${kind} ${periodStart}: v${report.version} ${report.status}${report.isPreliminary ? " (preliminary)" : ""}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await failJob(db, job, { message, retryable: true });
-      console.log(`Brand ${brandId} · week ${periodStart}: FAILED — ${message}`);
+      console.log(`Brand ${brandId} · ${kind} ${periodStart}: FAILED — ${message}`);
     }
   }
   await closeDb();

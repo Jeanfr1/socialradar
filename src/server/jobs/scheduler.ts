@@ -3,7 +3,8 @@
  * Enqueueing is idempotent (dedupe keys), so several workers or restarts never duplicate work.
  */
 import { and, count, eq, inArray, isNull, max } from "drizzle-orm";
-import { isValidTimezone, nextReportRunAt, previousCompleteWeek } from "@/domain/periods";
+import { DateTime } from "luxon";
+import { isValidTimezone, nextReportRunAt, previousCompleteMonth, previousCompleteWeek } from "@/domain/periods";
 import type { Db } from "@/server/db/client";
 import { brands, connections, providerOrganizations, reportVersions, syncRuns } from "@/server/db/schema";
 import { recommendedIntervalMinutes, reservesFromEnv } from "@/server/providers/buffer/quota";
@@ -100,11 +101,44 @@ export async function scheduleWeeklyReports(db: Db, now: Date): Promise<string[]
     const [existing] = await db
       .select({ id: reportVersions.id })
       .from(reportVersions)
-      .where(and(eq(reportVersions.brandId, brand.id), eq(reportVersions.periodStart, period.start), eq(reportVersions.trigger, "scheduled")))
+      .where(
+        and(
+          eq(reportVersions.brandId, brand.id),
+          eq(reportVersions.periodKind, "week"),
+          eq(reportVersions.periodStart, period.start),
+          eq(reportVersions.trigger, "scheduled"),
+        ),
+      )
       .limit(1);
     if (existing) continue;
     const dedupeKey = `${JOB_KINDS.weeklyReport}:${brand.id}:${period.start}`;
-    const r = await enqueueJob(db, { kind: JOB_KINDS.weeklyReport, payload: { brandId: brand.id, periodStart: period.start }, dedupeKey, runAt: now });
+    const r = await enqueueJob(db, { kind: JOB_KINDS.weeklyReport, payload: { brandId: brand.id, periodStart: period.start, kind: "week" }, dedupeKey, runAt: now });
+    if (r.enqueued) enqueued.push(dedupeKey);
+  }
+
+  // Monthly reports: the previous calendar month, due on the 1st at the brand's configured report time.
+  for (const brand of rows) {
+    if (!brand.schedule.enabled || !isValidTimezone(brand.timezone)) continue;
+    const month = previousCompleteMonth(now, brand.timezone);
+    const runAt = DateTime.fromJSDate(month.endUtcExclusive, { zone: brand.timezone })
+      .set({ hour: brand.schedule.hour, minute: brand.schedule.minute, second: 0, millisecond: 0 })
+      .toJSDate();
+    if (now.getTime() < runAt.getTime()) continue;
+    const [existing] = await db
+      .select({ id: reportVersions.id })
+      .from(reportVersions)
+      .where(
+        and(
+          eq(reportVersions.brandId, brand.id),
+          eq(reportVersions.periodKind, "month"),
+          eq(reportVersions.periodStart, month.start),
+          eq(reportVersions.trigger, "scheduled"),
+        ),
+      )
+      .limit(1);
+    if (existing) continue;
+    const dedupeKey = `report.monthly:${brand.id}:${month.start}`;
+    const r = await enqueueJob(db, { kind: JOB_KINDS.weeklyReport, payload: { brandId: brand.id, periodStart: month.start, kind: "month" }, dedupeKey, runAt: now });
     if (r.enqueued) enqueued.push(dedupeKey);
   }
   return enqueued;

@@ -575,6 +575,8 @@ export const reportVersions = pgTable(
     /** Local calendar dates (brand timezone) of the Monday–Sunday period. */
     periodStart: date("period_start", { mode: "string" }).notNull(),
     periodEnd: date("period_end", { mode: "string" }).notNull(),
+    /** "week" (Monday–Sunday) or "month" (calendar month). */
+    periodKind: text("period_kind").$type<"week" | "month">().notNull().default("week"),
     version: integer("version").notNull(),
     status: reportStatus("status").notNull().default("generating"),
     trigger: reportTrigger("trigger").notNull(),
@@ -595,10 +597,10 @@ export const reportVersions = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    uniqueIndex("report_versions_version_uq").on(t.brandId, t.periodStart, t.version),
-    /** At most one scheduled generation per brand and period: retries cannot duplicate it. */
+    uniqueIndex("report_versions_version_uq").on(t.brandId, t.periodKind, t.periodStart, t.version),
+    /** At most one scheduled generation per brand, period kind and period: retries cannot duplicate it. */
     uniqueIndex("report_versions_scheduled_uq")
-      .on(t.brandId, t.periodStart)
+      .on(t.brandId, t.periodKind, t.periodStart)
       .where(sql`${t.trigger} = 'scheduled'`),
   ],
 );

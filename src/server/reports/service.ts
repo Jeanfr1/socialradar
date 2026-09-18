@@ -14,7 +14,7 @@
 import { createHash } from "node:crypto";
 import { and, desc, eq, getTableColumns, isNull, lt, max, or, sql } from "drizzle-orm";
 import { DateTime } from "luxon";
-import { isValidTimezone, weekContaining, type WeekPeriod } from "@/domain/periods";
+import { isValidTimezone, monthContaining, weekContaining, type PeriodKind, type WeekPeriod } from "@/domain/periods";
 import { recordAudit } from "@/server/audit";
 import {
   ConflictError,
@@ -76,11 +76,16 @@ export function hashSnapshot(facts: ReportFacts): string {
   return createHash("sha256").update(canonicalJson(facts)).digest("hex");
 }
 
-export function resolvePeriod(timezone: string, periodStart: string): WeekPeriod {
+export function resolvePeriod(timezone: string, periodStart: string, kind: PeriodKind = "week"): WeekPeriod {
   if (typeof periodStart !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(periodStart)) throw new ValidationError("periodStart must be a local date (YYYY-MM-DD).");
   if (!isValidTimezone(timezone)) throw new ValidationError("The brand timezone is invalid.");
   const local = DateTime.fromISO(periodStart, { zone: timezone });
   if (!local.isValid) throw new ValidationError("periodStart must be a valid date.");
+  if (kind === "month") {
+    const month = monthContaining(local.toJSDate(), timezone);
+    if (month.start !== periodStart) throw new ValidationError("periodStart must be the first day of a month in the brand timezone.");
+    return month;
+  }
   const week = weekContaining(local.toJSDate(), timezone);
   if (week.start !== periodStart) throw new ValidationError("periodStart must be a Monday in the brand timezone.");
   return week;
@@ -98,11 +103,18 @@ async function loadBrand(db: Db, brandId: string): Promise<BrandRow> {
   return brand;
 }
 
-async function findScheduled(db: Db, brandId: string, periodStart: string): Promise<ReportVersionRow | null> {
+async function findScheduled(db: Db, brandId: string, periodStart: string, kind: PeriodKind): Promise<ReportVersionRow | null> {
   const [row] = await db
     .select()
     .from(reportVersions)
-    .where(and(eq(reportVersions.brandId, brandId), eq(reportVersions.periodStart, periodStart), eq(reportVersions.trigger, "scheduled")))
+    .where(
+      and(
+        eq(reportVersions.brandId, brandId),
+        eq(reportVersions.periodKind, kind),
+        eq(reportVersions.periodStart, periodStart),
+        eq(reportVersions.trigger, "scheduled"),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }
@@ -125,7 +137,7 @@ async function insertVersion(
     const [current] = await db
       .select({ v: max(reportVersions.version) })
       .from(reportVersions)
-      .where(and(eq(reportVersions.brandId, brand.id), eq(reportVersions.periodStart, period.start)));
+      .where(and(eq(reportVersions.brandId, brand.id), eq(reportVersions.periodKind, period.kind ?? "week"), eq(reportVersions.periodStart, period.start)));
     try {
       const [row] = await db
         .insert(reportVersions)
@@ -133,6 +145,7 @@ async function insertVersion(
           brandId: brand.id,
           periodStart: period.start,
           periodEnd: period.end,
+          periodKind: period.kind ?? "week",
           version: (current?.v ?? 0) + 1,
           status: "generating",
           trigger,
@@ -147,7 +160,7 @@ async function insertVersion(
     } catch (err) {
       if (!isUniqueViolation(err)) throw err;
       if (trigger === "scheduled") {
-        const existing = await findScheduled(db, brand.id, period.start);
+        const existing = await findScheduled(db, brand.id, period.start, period.kind ?? "week");
         if (existing) throw new ScheduledRowExists(existing);
       }
       // Version number taken by a concurrent generation: retry with the next one.
@@ -221,11 +234,17 @@ async function generateInto(db: Db, row: ReportVersionRow, brand: BrandRow, peri
 // ---------------------------------------------------------------------------
 // Generation
 // ---------------------------------------------------------------------------
-export async function runScheduledWeeklyReport(db: Db, input: { brandId: string; periodStart: string }, now: Date, deps: ReportDeps = {}): Promise<ReportVersionRow> {
+export async function runScheduledWeeklyReport(
+  db: Db,
+  input: { brandId: string; periodStart: string; kind?: PeriodKind },
+  now: Date,
+  deps: ReportDeps = {},
+): Promise<ReportVersionRow> {
   const brand = await loadBrand(db, input.brandId);
-  const period = resolvePeriod(brand.timezone, input.periodStart);
+  const kind = input.kind ?? "week";
+  const period = resolvePeriod(brand.timezone, input.periodStart, kind);
 
-  let row = await findScheduled(db, brand.id, period.start);
+  let row = await findScheduled(db, brand.id, period.start, kind);
   if (!row) {
     try {
       const created = await insertVersion(db, brand, period, "scheduled", null, now);
@@ -258,10 +277,18 @@ export async function runScheduledWeeklyReport(db: Db, input: { brandId: string;
   return generateInto(db, claimed, brand, period, now, deps);
 }
 
-export async function regenerateReport(db: Db, actor: Actor, brandId: string, periodStart: string, now: Date, deps: ReportDeps = {}): Promise<ReportVersionRow> {
+export async function regenerateReport(
+  db: Db,
+  actor: Actor,
+  brandId: string,
+  periodStart: string,
+  now: Date,
+  deps: ReportDeps = {},
+  kind: PeriodKind = "week",
+): Promise<ReportVersionRow> {
   const { brand } = await requireBrandRole(db, actor, brandId, "manager");
-  const period = resolvePeriod(brand.timezone, periodStart);
-  if (period.startUtc.getTime() > now.getTime()) throw new ValidationError("Reports cannot be generated for a week that has not started.");
+  const period = resolvePeriod(brand.timezone, periodStart, kind);
+  if (period.startUtc.getTime() > now.getTime()) throw new ValidationError("Reports cannot be generated for a period that has not started.");
   const row = await insertVersion(db, brand, period, "manual", actor.id, now);
   await recordAudit(db, {
     actorUserId: actor.id,
@@ -269,7 +296,7 @@ export async function regenerateReport(db: Db, actor: Actor, brandId: string, pe
     brandId: brand.id,
     targetType: "report_version",
     targetId: row.id,
-    metadata: { periodStart: period.start, version: row.version },
+    metadata: { periodStart: period.start, periodKind: kind, version: row.version },
   });
   return generateInto(db, row, brand, period, now, deps);
 }
@@ -282,24 +309,24 @@ export async function regenerateReport(db: Db, actor: Actor, brandId: string, pe
 export async function refreshPreliminaryReports(db: Db, now: Date, deps: ReportDeps = {}): Promise<ReportVersionRow[]> {
   const since = DateTime.fromJSDate(now).minus({ days: PRELIMINARY_REFRESH_LOOKBACK_DAYS }).toISODate() as string;
   const candidates = await db
-    .select({ brandId: reportVersions.brandId, periodStart: reportVersions.periodStart, version: max(reportVersions.version) })
+    .select({ brandId: reportVersions.brandId, periodKind: reportVersions.periodKind, periodStart: reportVersions.periodStart, version: max(reportVersions.version) })
     .from(reportVersions)
     .where(sql`${reportVersions.periodStart} >= ${since}`)
-    .groupBy(reportVersions.brandId, reportVersions.periodStart);
+    .groupBy(reportVersions.brandId, reportVersions.periodKind, reportVersions.periodStart);
   const created: ReportVersionRow[] = [];
   for (const c of candidates) {
     try {
       const [latest] = await db
         .select()
         .from(reportVersions)
-        .where(and(eq(reportVersions.brandId, c.brandId), eq(reportVersions.periodStart, c.periodStart)))
+        .where(and(eq(reportVersions.brandId, c.brandId), eq(reportVersions.periodKind, c.periodKind), eq(reportVersions.periodStart, c.periodStart)))
         .orderBy(desc(reportVersions.version))
         .limit(1);
       if (!latest || latest.status !== "preliminary") continue;
       if (latest.generatedAt && now.getTime() - latest.generatedAt.getTime() < PRELIMINARY_REFRESH_MIN_AGE_MS) continue;
       const brand = await loadBrand(db, c.brandId);
       if (brand.archivedAt) continue;
-      const period = resolvePeriod(brand.timezone, c.periodStart);
+      const period = resolvePeriod(brand.timezone, c.periodStart, c.periodKind);
       if (now.getTime() < period.endUtcExclusive.getTime() + PUBLISHED_SYNC_GRACE_HOURS * 3_600_000) continue;
       const facts = await computeFactsForBrand(db, brand, period, now);
       const reasons = encodePreliminaryReasons(facts.preliminaryReasons);
@@ -338,7 +365,7 @@ async function exportable(db: Db, actor: Actor, reportId: string) {
   if (!content || (report.status !== "final" && report.status !== "preliminary")) throw new ConflictError("This report version has no content to export.");
   const [brand] = await db.select({ slug: brands.slug }).from(brands).where(eq(brands.id, brandId)).limit(1);
   const slug = (brand?.slug ?? "brand").replace(/[^a-z0-9-]+/gi, "-").toLowerCase();
-  return { report, content, brandId, base: `brandpulse-${slug}-${report.periodStart}-v${report.version}` };
+  return { report, content, brandId, base: `brandpulse-${slug}-${report.periodKind === "month" ? "mensal" : "semanal"}-${report.periodStart}-v${report.version}` };
 }
 
 export async function renderReportPdf(db: Db, actor: Actor, reportId: string): Promise<{ filename: string; body: Buffer }> {
@@ -354,3 +381,6 @@ export async function renderReportCsv(db: Db, actor: Actor, reportId: string): P
   await recordAudit(db, { actorUserId: actor.id, action: "export_downloaded", brandId, targetType: "report_version", targetId: report.id, metadata: { format: "csv", version: report.version, periodStart: report.periodStart } });
   return { filename: `${base}.csv`, body };
 }
+
+/** Generic name: the service handles weekly and monthly periods. */
+export const runScheduledReport = runScheduledWeeklyReport;

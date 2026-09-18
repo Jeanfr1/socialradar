@@ -7,9 +7,10 @@
  * - Alerts for accounts that were unmapped or removed are resolved.
  */
 import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
-import { evaluateAccountAlerts, evaluateConnectionAlerts, resolveMissing, type AlertCandidate } from "@/domain/alert-rules";
+import { evaluateAccountAlerts, evaluateConnectionAlerts, evaluateNextDayGapAlert, resolveMissing, type AlertCandidate } from "@/domain/alert-rules";
+import type { DayPost } from "@/domain/next-day-gap";
 import type { Db } from "@/server/db/client";
-import { alerts, connections } from "@/server/db/schema";
+import { alerts, connections, posts } from "@/server/db/schema";
 import { loadAccountStatuses } from "@/server/queries/account-status";
 
 const SEVERITY_RANK = { info: 0, warning: 1, critical: 2 } as const;
@@ -111,10 +112,32 @@ export async function evaluateAlerts(
     .returning({ id: alerts.id });
   summary.resolved += orphaned.length;
 
-  for (const status of await loadAccountStatuses(db, { connectionId: scope.connectionId }, now)) {
+  const statuses = await loadAccountStatuses(db, { connectionId: scope.connectionId }, now);
+  // Posts around today (any timezone) for the next-day rule, grouped by account.
+  const dayPosts = new Map<string, DayPost[]>();
+  if (statuses.length > 0) {
+    const rows = await db
+      .select({ socialAccountId: posts.socialAccountId, status: posts.status, sentAt: posts.sentAt, dueAt: posts.dueAt })
+      .from(posts)
+      .where(
+        and(
+          inArray(posts.socialAccountId, statuses.map((s) => s.account.id)),
+          inArray(posts.status, ["scheduled", "sending", "sent"]),
+          sql`coalesce(${posts.sentAt}, ${posts.dueAt}) between ${new Date(now.getTime() - 2 * 86_400_000)} and ${new Date(now.getTime() + 3 * 86_400_000)}`,
+        ),
+      );
+    for (const r of rows) {
+      const list = dayPosts.get(r.socialAccountId) ?? [];
+      list.push({ status: r.status, at: r.status === "sent" ? r.sentAt ?? r.dueAt : r.dueAt });
+      dayPosts.set(r.socialAccountId, list);
+    }
+  }
+
+  for (const status of statuses) {
     const { account } = status;
     if (!account.brandId) continue;
-    const candidates = evaluateAccountAlerts({
+    // User-facing alerts are deliberately minimal: "tomorrow has no post" and publishing failures.
+    const failures = evaluateAccountAlerts({
       accountId: account.id,
       brandId: account.brandId,
       handle: account.handle,
@@ -128,7 +151,20 @@ export async function evaluateAlerts(
       timezone: status.cadence.timezone,
       lastQueueSyncAt: status.lastQueueSyncAt,
       inventoryCap: status.inventoryCap,
-    });
+    }).filter((c) => c.type === "publish_failed");
+    const candidates = [
+      ...failures,
+      ...evaluateNextDayGapAlert({
+        accountId: account.id,
+        brandId: account.brandId,
+        handle: account.handle,
+        platform: account.platform,
+        timezone: status.brandTimezone,
+        now,
+        lastQueueSyncAt: status.lastQueueSyncAt,
+        posts: dayPosts.get(account.id) ?? [],
+      }),
+    ];
     const open = await db
       .select({ dedupeKey: alerts.dedupeKey })
       .from(alerts)

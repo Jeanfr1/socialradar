@@ -25,7 +25,7 @@ import {
   rollingBaseline,
 } from "@/domain/metrics";
 import { computeCoverage, type CoverageResultDetailed } from "@/domain/coverage";
-import { isPeriodComplete, rollingWeeks, weekBefore, type WeekPeriod } from "@/domain/periods";
+import { isPeriodComplete, periodBefore, rollingPeriods, type WeekPeriod } from "@/domain/periods";
 import { rankContent, type RankingExclusionReason } from "@/domain/ranking";
 import type { CadenceConfig, Computed, MetricKey, MetricValue, Platform, PostPerformance, ValueStatus } from "@/domain/types";
 import { redactText } from "@/server/security/redact";
@@ -138,7 +138,7 @@ export interface ReportInput {
 
 /** First instant whose posts the report must load (trend window + ranking baseline). */
 export function reportWindowStart(period: WeekPeriod): Date {
-  const trendStart = rollingWeeks(period, TREND_WEEKS + 1)[0]!.startUtc.getTime();
+  const trendStart = rollingPeriods(period, TREND_WEEKS + 1)[0]!.startUtc.getTime();
   const rankingStart = period.endUtcExclusive.getTime() - RANKING_PARAMETERS.baselineWindowDays * 86_400_000;
   return new Date(Math.min(trendStart, rankingStart, period.startUtc.getTime()));
 }
@@ -640,7 +640,7 @@ function contentLists(input: ReportInput, accountsById: Map<string, ReportInputA
 // Trends
 // ---------------------------------------------------------------------------
 function trendMetrics(account: ReportInputAccount, accountPosts: PostPerformance[], index: RefreshIndex, period: WeekPeriod, now: Date, ageHours: number): FactTrendMetric[] {
-  const weeks = [...rollingWeeks(weekBefore(period), TREND_WEEKS), period];
+  const weeks = [...rollingPeriods(periodBefore(period), TREND_WEEKS), period];
   const minSample = COMPARISON_PARAMETERS.minMedianSample;
   const perWeek = weeks.map((w) => {
     const posts = accountPosts.filter((p) => inPeriod(p.publishedAt, w));
@@ -747,7 +747,7 @@ export function encodePreliminaryReasons(reasons: { code: PreliminaryReasonCode;
 // ---------------------------------------------------------------------------
 export function computeReportFacts(input: ReportInput): ReportFacts {
   const { period, now } = input;
-  const previous = weekBefore(period);
+  const previous = periodBefore(period);
   const locale = resolveReportLocale(input.brand.reportLocale);
   const index = buildRefreshIndex(input.observations, now);
   const accounts = [...input.accounts].sort((a, b) => a.platform.localeCompare(b.platform) || a.handle.localeCompare(b.handle) || a.id.localeCompare(b.id));
@@ -781,6 +781,7 @@ export function computeReportFacts(input: ReportInput): ReportFacts {
     schemaVersion: REPORT_SCHEMA_VERSION,
     brand: { id: input.brand.id, name: input.brand.name, timezone: input.brand.timezone, locale, requestedLocale: input.brand.reportLocale },
     period: {
+      kind: period.kind ?? "week",
       start: period.start,
       end: period.end,
       startUtc: period.startUtc.toISOString(),
